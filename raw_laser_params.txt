@@ -1,0 +1,9 @@
+laser_type = 0
+start_angle = -1.570796
+field_of_view = 3.141593
+angular_resolution = 0.008727
+maximum_range = 81.92
+accuracy = 0.05
+remission_mode = 0
+num_readings = 361
+num_remissions = 0
