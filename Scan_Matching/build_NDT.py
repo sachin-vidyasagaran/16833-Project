@@ -20,7 +20,10 @@ class NDT:
 
     def hsh(self, pt):
         ''' x_size is number of columns in discretization'''
-        return abs(pt[1]) * self.x_size + abs(pt[0])
+        if (pt[0] < 0 or pt[1] < 0):
+            return -1
+
+        return pt[1] * self.x_size + pt[0]
 
 
     def add_pt_to_maps(self, pt):
@@ -30,10 +33,12 @@ class NDT:
         pt_all_map = np.tile(pt,(4,1))
         pt_all_map += shift_template 
         # Get corresponidng cell location of points
-        pt_all_map -= abs(pt_all_map%self.cell_size)
+        pt_all_map -= pt_all_map%self.cell_size
         hashes = np.apply_along_axis(self.hsh, 1, pt_all_map)
 
         for i in range(len(self.cell_maps)):
+            if (hashes[i] < 0):
+                continue
             cell = Cell(pt_all_map[i,0], pt_all_map[i,1])
             cell.pts.append(pt)
             self.cell_maps[i][hashes[i]] = cell
@@ -63,8 +68,8 @@ class NDT:
         
         # Make bottom left corner as 0
         scan_xy[0,:] += abs(xy_min[0])
-        scan_xy[1,:] -= abs(xy_max[1])
-         # Recompute limits
+        scan_xy[1,:] -= abs(xy_min[1])
+        # Recompute limits
         xy_max = np.amax(scan_xy,axis=1)
         xy_min = np.amin(scan_xy,axis=1)
         # plt.scatter(scan_xy[0,:],scan_xy[1,:])
@@ -72,22 +77,17 @@ class NDT:
         # plt.scatter(0,0,c='r',marker='*',s=100)
         # plt.show()
         
-        # Modify max vals
-        # xy_max[0] += abs(xy_min[0])
-        # xy_min[1] -= abs(xy_max[1])
-        xy_max[0] += self.cell_size - abs(xy_max[0])%self.cell_size
-        xy_min[1] -= self.cell_size - abs(xy_min[1])%self.cell_size
+        xy_max += self.cell_size - xy_max%self.cell_size
 
         self.x_size = int(xy_max[0]/self.cell_size) # Number of cols in discretization
 
         # Iterate over scan_xy and populate map
         for i in range(scan_xy.shape[1]):
             pt = scan_xy[:,i]
+            pt = np.array([0.01,0.02])
             self.add_pt_to_maps(pt)
         
         # print(self.cell_maps[0])
-        
-
         #TODO: Calculate mean and covariance for each cell for all maps
 
 def main():
