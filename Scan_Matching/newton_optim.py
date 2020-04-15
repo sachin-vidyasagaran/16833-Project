@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.linalg import inv
 
-class NewtonOptimzer:
+class NewtonOptimizer:
     def __init__(self):
         self.param_curr = None # Current estimate of the transformation (3,)
         self.cos_phi = None
