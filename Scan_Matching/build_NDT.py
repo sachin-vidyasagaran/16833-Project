@@ -76,6 +76,13 @@ class NDT:
         for m in self.cell_maps:
             self.calc_mean_covariance(m) # TODO:Check if need to make a deep copy here
 
+    def prune_maxed_out_scans(self, laser_scan):
+        cols_to_keep = laser_scan[0,:]<81.91
+        elems_to_keep = np.tile(cols_to_keep,(2,1))
+        pruned_scan = np.extract(elems_to_keep, laser_scan)
+        pruned_scan = pruned_scan.reshape((2, pruned_scan.size//2))
+        return pruned_scan
+
     def build_NDT(self):
         '''
         Creates a Normal Distribuion Transformation over current scan
@@ -85,6 +92,12 @@ class NDT:
 
         laser_bearing = np.linspace(-np.pi/2,np.pi/2,num=361)
         laser_scan = np.vstack((self.laser_ranges,laser_bearing))
+
+        print(laser_scan.shape)
+        laser_scan = self.prune_maxed_out_scans(laser_scan)
+        print("PRUNED:")
+        print(laser_scan.shape)
+
         scan_xy = self.get_XY_from_laser(laser_scan) # Get readings as X,Y
 
 
