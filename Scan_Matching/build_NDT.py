@@ -15,7 +15,7 @@ class Cell:
 class NDT:
     def __init__(self, laser_ranges):
         self.laser_ranges = laser_ranges
-        self.cell_size = 0.5    # NOTE: Currently all cells have just 1 point. Should cell_size be increased?
+        self.cell_size = 0.5    # NOTE: Need to tune
         self.x_size = None
         self.cell_maps = [{},{},{},{}]
 
@@ -119,6 +119,7 @@ class NDT:
         x_range = np.arange(xy_max[0])
         
         plot_pts(scan_xy,xy_max[0], xy_max[1], self.cell_size)
+        
 
         xy_max += self.cell_size - xy_max%self.cell_size
 

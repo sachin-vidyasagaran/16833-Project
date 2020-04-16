@@ -18,14 +18,16 @@ class NewtonOptimizer:
 
     def get_gradient_and_hessian(self, pt_dash, pt, pt_mean, pt_cov):
         '''
-        -- pt is a single point in the second scan in the frame of the second scan (2,1)
+        -- pt is a single point in the second scan in the frame of the second scan (2,)
         -- pt_dash is a single point in the second scan transformed in the frame of
         first scan (2,)
         -- pt_mean is the mean of the NDT cell of the transformed point (2,)
         -- pt_cov is the covariance of the NDT cell of the transformed point (2,2)
         Returns: (1,3) g for a single point, (3,3) Hessian for a single point
         '''
-        s = self.get_score(pt_dash, pt_mean, pt_cov)
+        q = pt_dash - pt_mean
+        cov_inv = inv(pt_cov)
+        s = -np.exp((-q.T @ cov_inv @ q)/2)
         J = np.array([[1,   0,   -pt[0]*self.sin_phi - pt[1]*self.cos_phi]
                       [0,   1,   pt[0]*self.cos_phi - pt[1]*self.sin_phi]])
 
@@ -35,7 +37,7 @@ class NewtonOptimizer:
         H_1 = (rec_1 @ J).T @ (rec_1 @ J) # (3,3) one part of hessian
         H_2 = np.zeros((3,3))
         H_2[2,2] = rec_1 @ np.array([-pt[0]*self.cos_phi + pt[1]*self.sin_phi, -pt[0]*self.sin_phi - pt[1]*self.cos_phi])
-        H_3 = J.T @ cov_inv @ J
+        H_3 = -J.T @ cov_inv @ J
 
         H_i = s * (H_1 + H_2 + H_3) #TODO: Check if hessian is positive definite
 
@@ -48,11 +50,18 @@ class NewtonOptimizer:
         g_i, H_i = self.get_gradient_and_hessian(pt_dash, pt, pt_mean, pt_cov)
         return -inv(H_i) @ g_i.T
 
-    def get_score(self, pt_dash, pt_mean, pt_cov):
-        q = pt_dash - pt_mean
-        cov_inv = inv(pt_cov)
-        s = -np.exp((-q.T @ cov_inv @ q)/2) # One summand scalar
-        return s
+
+    # def batch_get_gradient_hessian(self, pt_dash, pt, pt_mean, pt_cov):
+    #     '''
+    #     -- pt is a single point in the second scan in the frame of the second scan (n,2)
+    #     -- pt_dash is a single point in the second scan transformed in the frame of 
+    #        first scan (n,2)
+    #     -- pt_mean is the mean of the NDT cell of the transformed point (n,2)
+    #     -- pt_cov is the covariance of the NDT cell of the transformed point (2n,2n)
+    #     Returns: (1,3) g for a single point, (3,3) Hessian for a single point
+    #     '''
+    #     q = pt_dash - pt_mean # (n,2)
+
 
     def transform_pt(self, pt):
         '''
