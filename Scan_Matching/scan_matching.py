@@ -1,5 +1,6 @@
 from build_NDT import *
 from newton_optim import *
+from numpy import genfromtxt
 
 '''
 2D Scan-Matching between two laser scans
@@ -45,3 +46,39 @@ def scan_match(current_scan, reference_scan, init_params):
     # Determine the correspoding distributions these points belong in
 
 
+def load_data():
+    data = genfromtxt('robot_laser.csv', delimiter=',')
+
+    timestamps = data[:,0]      #(t,)
+    odoms = data[:,4:7]         #(t,3)
+    laser_scans = data[:, 9:]   #(t,361)
+
+    '''
+    NOTE: In the dataset, the transforms are all w.r.t 
+    some global reference frame and not w.r.t the first 
+    scan like in the NDT implementation. In order to
+    account for this, all odometry values are shifted by
+    the odometry at the first scan
+    '''
+    odoms = odoms - odoms[0,:]
+
+    return timestamps, odoms, laser_scans
+
+def main():
+    timestamps, odoms, laser_scans = load_data()
+
+    # Construct the NDT for the first timestamp
+    # init_NDT = NDT(laser_scans[0,:])
+    # init_NDT.build_NDT()
+
+    for t in range(1,timestamps.size):
+        # tx_odom = odoms[t,0]
+        # ty_odom = odoms[t,1]
+        # phi_odom = odoms[t,2]
+        
+        H_odom = homogeneous_transformation(odoms[t,:])
+        print(H_odom)
+        break
+
+if __name__ == "__main__":
+    main()
