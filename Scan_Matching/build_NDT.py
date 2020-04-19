@@ -85,20 +85,32 @@ class NDT:
 
         return hashes, pt_all_map
 
-    def get_distributions(self, pts):
+    def get_score_and_distributions(self, pts):
         '''
         '''
         # Pts first need to be transformed such that robot is at bottom left
         # Iterate over pts
         pts_means = []
         pts_covs = []
+        total_score = 0
         for i in range(pts.shape[0]):
             hashes, _ = self.get_hashes_locs(pts[i,:])
             best_scr = float("inf")
+            pt_mean = np.zeros(2)
+            pt_cov = np.zeros((2,2))
             for j in range(len(self.cell_maps)):
                 mean = self.cell_maps[j][hashes[j]].mean
                 cov = self.cell_maps[j][hashes[j]].cov
                 scr = calc_score_pt(pt[i,:],mean, cov)
+                total_score += scr
+                if (scr > best_scr):
+                    pt_mean = mean
+                    pt_cov = pt_cov
+                    best_scr = scr
+            pts_means.append(pt_mean)
+            pts_covs.append(pt_cov)
+        
+        return total_score, pts_means, pts_covs
 
 
 
