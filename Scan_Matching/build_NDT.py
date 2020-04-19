@@ -3,53 +3,7 @@
 import numpy as np
 import csv
 import matplotlib.pyplot as plt
-
-
-def plot_pts(scan, x_max, y_max, cell_size):
-    print(x_max)
-    print(y_max)
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    major_ticks = np.arange(0, x_max, cell_size)
-    minor_ticks = np.arange(0, y_max, cell_size)
-    ax.set_xticks(major_ticks)
-    ax.set_xticks(minor_ticks, minor=True)
-    ax.set_yticks(major_ticks)
-    ax.set_yticks(minor_ticks, minor=True)
-
-    plt.scatter(scan[:,0],scan[:,1])
-    plt.hold(True)
-    plt.scatter(0,0,c='r',marker='*',s=100)
-    # And a corresponding grid
-    ax.grid(which='both')
-
-    # Or if you want different settings for the grids:
-    ax.grid(which='minor', alpha=0.2)
-    ax.grid(which='major', alpha=0.5)
-
-    plt.show()
-
-def get_cartesian(laser_scan):
-    '''
-    Takes in a laser scan from angle anges (-pi/2 to pi/2)
-    Returns readings in cartesian coordinates (n,2)
-    '''
-    x = laser_scan[0,:]*np.sin(laser_scan[1,:])
-    y = laser_scan[0,:]*np.cos(laser_scan[1,:])
-    return np.vstack((x,y)).T
-
-def calc_score_pt(pt, mean, cov):
-    '''
-    Calculates score of a single point
-    Returns the positive score
-    '''
-    if (np.linalg.det(cov_mat) is 0):
-        return 0
-
-    q = pt - mean
-    cov_inv = inv(cov)
-    s = np.exp((-q.T @ cov_inv @ q)/2)
-    return s
+from utils import *
 
 class Cell:
     def __init__(self, x, y):
@@ -61,12 +15,13 @@ class Cell:
 
 class NDT:
     def __init__(self, laser_ranges):
-        self.laser_ranges = np.asarray(laser_ranges)
+        self.laser_ranges = laser_ranges
         self.cell_size = 0.5    # NOTE: Need to tune
         self.x_size = None
         self.cell_maps = [{},{},{},{}]
         self.xy_max = None
         self.xy_min = None
+        self.shift_xy = None
 
     def hsh(self, pt):
         ''' x_size is number of columns in discretization'''
@@ -89,8 +44,8 @@ class NDT:
         return hashes, pt_all_map
 
     def standard_shift(self, pts):
-        pts[:,0] += abs(self.xy_min[0])
-        pts[:,1] -= abs(self.xy_min[1])
+        pts[:,0] += abs(self.shift_xy[0])
+        pts[:,1] -= abs(self.shift_xy[1])
         return pts
 
     def get_score_and_distributions(self, pts):
@@ -98,7 +53,6 @@ class NDT:
         '''
         assert(pts.shape[1]== 2)
         # Pts first need to be transformed such that robot is at bottom left
-        pts =  self.standard_shift(pts)
 
         pts_means = []
         pts_covs = []
@@ -168,12 +122,7 @@ class NDT:
         for m in self.cell_maps:
             self.calc_mean_covariance(m) # TODO:Check if need to make a deep copy here
 
-    def prune_maxed_out_scans(self, laser_scan):
-        cols_to_keep = laser_scan[0,:]<81.91
-        elems_to_keep = np.tile(cols_to_keep,(2,1))
-        pruned_scan = np.extract(elems_to_keep, laser_scan)
-        pruned_scan = pruned_scan.reshape((2, pruned_scan.size//2))
-        return pruned_scan
+    
 
     def build_NDT(self):
         '''
@@ -182,11 +131,10 @@ class NDT:
         Output:
         '''
 
-        laser_bearing = np.linspace(-np.pi/2,np.pi/2,num=361)
-        laser_scan = np.vstack((self.laser_ranges,laser_bearing))
+        laser_scan = get_scan_from_ranges(self.laser_ranges)
 
         print(laser_scan.shape)
-        laser_scan = self.prune_maxed_out_scans(laser_scan)
+        laser_scan = prune_maxed_out_scans(laser_scan)
         print("PRUNED:")
         print(laser_scan.shape)
 
@@ -197,9 +145,11 @@ class NDT:
         self.xy_max = np.amax(scan_xy,axis=0)
         self.xy_min = np.amin(scan_xy,axis=0)
 
+        self.shift_xy = self.xy_min
         # Make bottom left corner as 0
-        scan_xy[:,0] += abs(self.xy_min[0])
-        scan_xy[:,1] -= abs(self.xy_min[1])
+        # scan_xy[:,0] += abs(self.xy_min[0])
+        # scan_xy[:,1] -= abs(self.xy_min[1])
+        scan_xy = self.standard_shift(scan_xy)
         # Recompute limits
         self.xy_max = np.amax(scan_xy,axis=0)
         self.xy_min = np.amin(scan_xy,axis=0)

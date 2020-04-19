@@ -3,7 +3,7 @@ from numpy.linalg import inv
 from build_NDT import calc_score_pt
 
 class NewtonOptimizer:
-    def __init__(self, pts, pts_means, pts_covs):
+    def __init__(self):
         self.param_curr = None # Current estimate of the transformation (3,) (t_x, t_y, phi)
         self.cos_phi = None
         self.sin_phi = None
@@ -34,6 +34,8 @@ class NewtonOptimizer:
         Returns: (1,3) g for a single point, (3,3) Hessian for a single point
         '''
         s = -calc_score_pt(pt_dash, pt_mean, pt_cov) # Note optimization runs on negative score
+        q = pt_dash - pt_mean
+
         J = np.array([[1,   0,   -pt[0]*self.sin_phi - pt[1]*self.cos_phi]
                       [0,   1,   pt[0]*self.cos_phi - pt[1]*self.sin_phi]])
 
@@ -74,7 +76,7 @@ class NewtonOptimizer:
         Run pt_increment for all points and get new parameter update
         '''
         delta_p = np.zeros(3,)
-        for i in range(len(pts)):
+        for i in range(self.pts.shape[0]):
             delta_p += self.pt_increment(self.pts_dash[i], self.pts[i], pts_mean[i], pts_cov[i])
 
         return delta_p
