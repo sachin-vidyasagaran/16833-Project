@@ -1,12 +1,16 @@
 import numpy as np
 from numpy.linalg import inv
+from build_NDT import calc_score_pt
 
 class NewtonOptimizer:
-    def __init__(self):
+    def __init__(self, pts, pt_means, pt_covs):
         self.param_curr = None # Current estimate of the transformation (3,) (t_x, t_y, phi)
         self.cos_phi = None
         self.sin_phi = None
         self.lmda = 0 # Parameter to make Hessian Positive definite
+        self.pts = pts
+        self.pt_means = pt_means
+        self.pt_covs = pt_covs
 
     def set_consts(self, param_curr):
         '''
@@ -25,9 +29,7 @@ class NewtonOptimizer:
         -- pt_cov is the covariance of the NDT cell of the transformed point (2,2)
         Returns: (1,3) g for a single point, (3,3) Hessian for a single point
         '''
-        q = pt_dash - pt_mean
-        cov_inv = inv(pt_cov)
-        s = -np.exp((-q.T @ cov_inv @ q)/2)
+        s = -calc_score_pt(pt_dash, pt_mean, pt_cov)
         J = np.array([[1,   0,   -pt[0]*self.sin_phi - pt[1]*self.cos_phi]
                       [0,   1,   pt[0]*self.cos_phi - pt[1]*self.sin_phi]])
 
@@ -63,18 +65,13 @@ class NewtonOptimizer:
     #     q = pt_dash - pt_mean # (n,2)
 
 
-    def transform_pt(self, pt):
-        '''
-        Transforms pt into the frame of the first scan based on
-        the current transform to return pt_dash
-        '''
-        rot_mat = np.array([[self.cos_phi, -self.sin_phi], [self.sin_phi, self.cos_phi]])
-        pt_dash = rot_mat @ pt + self.param_curr[:2][:,None]
-        return pt_dash
-
     def step(self):
         '''
         Run pt_increment for all points and get new parameter update
         '''
+        delta_p = np.zeros(3,)
+        for i in range(len(pts)):
+            delta_p += self.pt_increment(pt_dash[i], pt[i], pt_mean[i], pt_cov[i])
+
 
 
