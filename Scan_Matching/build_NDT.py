@@ -43,6 +43,9 @@ def calc_score_pt(pt, mean, cov):
     Calculates score of a single point
     Returns the positive score
     '''
+    if (np.linalg.det(cov_mat) is 0):
+        return 0
+
     q = pt - mean
     cov_inv = inv(cov)
     s = np.exp((-q.T @ cov_inv @ q)/2)
@@ -85,17 +88,25 @@ class NDT:
 
         return hashes, pt_all_map
 
+    def standard_shift(self, pts):
+        pts[:,0] += abs(self.xy_min[0])
+        pts[:,1] -= abs(self.xy_min[1])
+        return pts
+
     def get_score_and_distributions(self, pts):
         '''
         '''
+        assert(pts.shape[1]== 2)
         # Pts first need to be transformed such that robot is at bottom left
-        # Iterate over pts
+        pts =  self.standard_shift(pts)
+
         pts_means = []
         pts_covs = []
         total_score = 0
+        # Iterate over pts
         for i in range(pts.shape[0]):
             hashes, _ = self.get_hashes_locs(pts[i,:])
-            best_scr = float("inf")
+            best_scr = -float("inf")
             pt_mean = np.zeros(2)
             pt_cov = np.zeros((2,2))
             for j in range(len(self.cell_maps)):

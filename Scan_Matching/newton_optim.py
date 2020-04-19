@@ -3,14 +3,12 @@ from numpy.linalg import inv
 from build_NDT import calc_score_pt
 
 class NewtonOptimizer:
-    def __init__(self, pts, pt_means, pt_covs):
+    def __init__(self, pts, pts_means, pts_covs):
         self.param_curr = None # Current estimate of the transformation (3,) (t_x, t_y, phi)
         self.cos_phi = None
         self.sin_phi = None
         self.lmda = 0 # Parameter to make Hessian Positive definite
-        self.pts = pts
-        self.pt_means = pt_means
-        self.pt_covs = pt_covs
+        self.iters = 5
 
     def set_consts(self, param_curr):
         '''
@@ -19,6 +17,12 @@ class NewtonOptimizer:
         self.param_curr = param_curr # Current estimate of the transformation (3,)
         self.cos_phi = np.cos(param_curr[2])
         self.sin_phi = np.sin(param_curr[2])
+    
+    def set_variables(self, pts_dash, pts, pts_means, pts_covs):
+        self.pts_dash = pts_dash
+        self.pts = pts
+        self.pts_means = pts_means
+        self.pt_covs = pt_covs
 
     def get_gradient_and_hessian(self, pt_dash, pt, pt_mean, pt_cov):
         '''
@@ -29,7 +33,7 @@ class NewtonOptimizer:
         -- pt_cov is the covariance of the NDT cell of the transformed point (2,2)
         Returns: (1,3) g for a single point, (3,3) Hessian for a single point
         '''
-        s = -calc_score_pt(pt_dash, pt_mean, pt_cov)
+        s = -calc_score_pt(pt_dash, pt_mean, pt_cov) # Note optimization runs on negative score
         J = np.array([[1,   0,   -pt[0]*self.sin_phi - pt[1]*self.cos_phi]
                       [0,   1,   pt[0]*self.cos_phi - pt[1]*self.sin_phi]])
 
@@ -71,7 +75,7 @@ class NewtonOptimizer:
         '''
         delta_p = np.zeros(3,)
         for i in range(len(pts)):
-            delta_p += self.pt_increment(pt_dash[i], pt[i], pt_mean[i], pt_cov[i])
+            delta_p += self.pt_increment(self.pts_dash[i], self.pts[i], pts_mean[i], pts_cov[i])
 
-
+        return delta_p
 
