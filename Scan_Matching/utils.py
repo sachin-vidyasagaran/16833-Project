@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.linalg import inv
+from numpy import linalg as LA
 
 '''
 Helper functions
@@ -23,10 +25,32 @@ def plot_pts(scan, x_max, y_max, cell_size):
     ax.grid(which='both')
 
     # Or if you want different settings for the grids:
-    ax.grid(which='minor', alpha=0.2)
-    ax.grid(which='major', alpha=0.5)
+    ax.grid(which='minor', alpha=0.8)
+    ax.grid(which='major', alpha=0.8)
 
+    # plt.axis('equal')
     plt.show()
+def make_non_singular(cov):
+    e1, e2 = [cov[0,0],cov[1,1]]
+    # print(e1, e2)
+    if (e1 < 0 or e2 < 0):
+        print("e1: ",e1, " e2: ",e2)
+
+    if (e1 == 0.0 and e2 == 0.0):
+        # print("Here")
+        cov[0,0] = 0.01
+        cov[1,1] = 0.01
+    
+    elif (e1 < 0.001*e2):
+        cov[0,0] = 0.001*e2
+
+    elif (e2 < 0.001*e1):
+        cov[1,1] = 0.001*e1
+        
+    # print(cov[0,0], cov[1,1])
+    return cov
+    
+        
 
 def get_cartesian(laser_scan):
     '''
@@ -42,11 +66,11 @@ def calc_score_pt(pt, mean, cov):
     Calculates score of a single point
     Returns the positive score
     '''
-    if (np.linalg.det(cov_mat) is 0):
-        return 0
-
     q = pt - mean
+    cov = make_non_singular(cov)
+    # print(cov)
     cov_inv = inv(cov)
+    
     s = np.exp((-q.T @ cov_inv @ q)/2)
     return s
 

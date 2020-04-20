@@ -64,9 +64,11 @@ class NDT:
             pt_mean = np.zeros(2)
             pt_cov = np.zeros((2,2))
             for j in range(len(self.cell_maps)):
+                if (hashes[j] not in self.cell_maps[j]):
+                    continue
                 mean = self.cell_maps[j][hashes[j]].mean
-                cov = self.cell_maps[j][hashes[j]].cov
-                scr = calc_score_pt(pt[i,:],mean, cov)
+                cov = self.cell_maps[j][hashes[j]].covariance
+                scr = calc_score_pt(pts[i,:],mean, cov)
                 total_score += scr
                 if (scr > best_scr):
                     pt_mean = mean
@@ -147,8 +149,6 @@ class NDT:
 
         self.shift_xy = self.xy_min
         # Make bottom left corner as 0
-        # scan_xy[:,0] += abs(self.xy_min[0])
-        # scan_xy[:,1] -= abs(self.xy_min[1])
         scan_xy = self.standard_shift(scan_xy)
         # Recompute limits
         self.xy_max = np.amax(scan_xy,axis=0)

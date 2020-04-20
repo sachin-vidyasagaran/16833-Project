@@ -45,8 +45,15 @@ def scan_match(current_ranges, reference_ranges, init_params):
     ndt = NDT(reference_ranges)
     ndt.build_NDT()
 
+    plot_curr = ndt.standard_shift(current_scan_xy)
+    plot_pts(plot_curr, np.amax(plot_curr,axis=0)[0], np.amax(plot_curr,axis=0)[1], 0.5)
+
     # Map the current_scan in the frame of referennce scan
     pts_dash = transform_pts(homogeneous_transformation(init_params), current_scan_xy) # (n,2)
+    # plot_dash = pts_dash 
+    plot_dash = ndt.standard_shift(pts_dash)
+    plot_pts(plot_dash, np.amax(plot_dash,axis=0)[0], np.amax(plot_dash,axis=0)[1], 0.5)
+
     assert(pts_dash.shape[0] == num_curr_pts)
     # Determine the correspoding distributions these points belong in
     score, pts_means, pts_covs = ndt.get_score_and_distributions(ndt.standard_shift(pts_dash))
@@ -98,14 +105,19 @@ def main():
     # init_NDT.build_NDT()
 
     t_ref = 500
-    t_curr = 501
+    t_curr = 505
     curr_scan = laser_scans[t_curr,:]
     ref_scan = laser_scans[t_ref,:]
     params = odoms[t_curr,:] - odoms[t_ref,:]
+    # params = odoms[t_ref,:] - odoms[t_curr,:]
 
-    print("Params:")
-    print(params)
-    scan_match(curr_scan, ref_scan, params)
+    print("Init params:")
+    print(params,'\n')
+    # params = params * 0.9
+    print(params,'\n')
+
+    estimated_params = scan_match(curr_scan, ref_scan, params)
+    print("Estimated params: ",estimated_params)
 
 if __name__ == "__main__":
     main()
