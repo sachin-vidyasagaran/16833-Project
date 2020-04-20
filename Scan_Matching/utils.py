@@ -17,7 +17,7 @@ def plot_pts(scan, x_max, y_max, cell_size):
     ax.set_yticks(minor_ticks, minor=True)
 
     plt.scatter(scan[:,0],scan[:,1])
-    plt.hold(True)
+    # plt.hold()
     plt.scatter(0,0,c='r',marker='*',s=100)
     # And a corresponding grid
     ax.grid(which='both')

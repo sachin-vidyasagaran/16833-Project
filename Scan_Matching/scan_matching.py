@@ -97,14 +97,15 @@ def main():
     # init_NDT = NDT(laser_scans[0,:])
     # init_NDT.build_NDT()
 
-    for t in range(1,timestamps.size):
-        # tx_odom = odoms[t,0]
-        # ty_odom = odoms[t,1]
-        # phi_odom = odoms[t,2]
-        
-        H_odom = homogeneous_transformation(odoms[t,:])
-        print(H_odom)
-        break
+    t_ref = 500
+    t_curr = 501
+    curr_scan = laser_scans[t_curr,:]
+    ref_scan = laser_scans[t_ref,:]
+    params = odoms[t_curr,:] - odoms[t_ref,:]
+
+    print("Params:")
+    print(params)
+    scan_match(curr_scan, ref_scan, params)
 
 if __name__ == "__main__":
     main()
