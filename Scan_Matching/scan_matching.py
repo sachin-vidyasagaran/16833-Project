@@ -7,25 +7,6 @@ from utils import *
 '''
 2D Scan-Matching between two laser scans
 '''
-def homogeneous_transformation(params):
-    tx, ty, phi = params
-    H = np.array([[np.cos(phi),   -np.sin(phi),   tx],
-                  [np.sin(phi),    np.cos(phi),   ty],
-                  [0,              0,              1]])
-    
-    return H
-
-
-def transform_pts(H, scan):
-    '''
-    Takes a scan (n,2)
-    Transforms pts according to H
-    '''
-    # Make scan homogeneous
-    scan = np.c_[scan, np.ones((scan.shape[0],1))]
-    return (H @ scan.T)[0:2,:].T # Return in non-homogeneous form (n,2)
-
-
 
 def scan_match(current_ranges, reference_ranges, init_params):
     '''
@@ -105,7 +86,7 @@ def main():
     # init_NDT.build_NDT()
 
     t_ref = 500
-    t_curr = 505
+    t_curr = 501
     curr_scan = laser_scans[t_curr,:]
     ref_scan = laser_scans[t_ref,:]
     params = odoms[t_curr,:] - odoms[t_ref,:]
@@ -116,8 +97,9 @@ def main():
     # params = params * 0.9
     print(params,'\n')
 
-    estimated_params = scan_match(curr_scan, ref_scan, params)
-    print("Estimated params: ",estimated_params)
+    debug_plot(curr_scan, ref_scan, params)
+    # estimated_params = scan_match(curr_scan, ref_scan, params)
+    # print("Estimated params: ",estimated_params)
 
 if __name__ == "__main__":
     main()
