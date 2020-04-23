@@ -25,19 +25,18 @@ def transform_pts(H, scan):
 
     return (H @ scan.T)[0:2,:].T # Return in non-homogeneous form (n,2)
 
-def plot_pts(scan, x_max, y_max, cell_size):
-    print(x_max)
-    print(y_max)
+def plot_pts(scan, xy_max, xy_min, cell_size):
+
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    major_ticks = np.arange(0, x_max, cell_size)
-    minor_ticks = np.arange(0, y_max, cell_size)
+    major_ticks = np.arange(xy_min[0], xy_max[0], cell_size)
+    minor_ticks = np.arange(xy_min[1], xy_max[1], cell_size)
     ax.set_xticks(major_ticks)
     ax.set_xticks(minor_ticks, minor=True)
     ax.set_yticks(major_ticks)
     ax.set_yticks(minor_ticks, minor=True)
 
-    plt.scatter(scan[:,0],scan[:,1])
+    plt.scatter(scan[:,1],scan[:,0])
     # plt.hold()
     plt.scatter(0,0,c='r',marker='*',s=100)
     # And a corresponding grid
@@ -77,8 +76,8 @@ def get_cartesian(laser_scan):
     Takes in a laser scan from angle anges (-pi/2 to pi/2)
     Returns readings in cartesian coordinates (n,2)
     '''
-    x = laser_scan[:,0]*np.sin(laser_scan[:,1])
-    y = laser_scan[:,0]*np.cos(laser_scan[:,1])
+    x = laser_scan[:,0]*np.cos(laser_scan[:,1])
+    y = laser_scan[:,0]*np.sin(laser_scan[:,1])
     return np.vstack((x,y)).T # (n,2)
 
 
