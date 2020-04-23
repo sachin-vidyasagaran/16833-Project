@@ -1,5 +1,6 @@
 import numpy as np
-
+from build_NDT import *
+from newton_optim import *
 
 def get_scan_from_ranges_debug(laser_ranges, xy_scan):
     bearings = np.arctan2(xy_scan[:,1,xy_scan[:,0]])
@@ -10,13 +11,24 @@ def scan_match_debug(current_ranges, reference_ranges, init_params):
     Takes in two laser scans and returns an estimated transform
     between them
     '''
-    
+    current_scan_xy = np.array([[-0.38 ,  0.95 ],
+                                [-0.28 ,  0.9  ],
+                                [-0.255,  1.06 ],
+                                [ 0.   ,  1.17 ],
+                                [ 0.6  ,  1.05 ],
+                                [ 0.71 ,  1.   ],
+                                [ 1.04 ,  0.94 ],
+                                [ 1.99 ,  1.   ],
+                                [ 2.06 ,  1.06 ],
+                                [ 2.13 ,  0.82 ]])
+
     # Build NDT of reference scan if not already present
     # TODO: Check if NDT already exists
     ndt = NDT(reference_ranges)
     ndt.build_NDT()
 
-    plot_curr = ndt.standard_shift(current_scan_xy)
+    plot_curr = current_scan_xy
+    # plot_curr = ndt.standard_shift(current_scan_xy)
     plot_pts(plot_curr, np.amax(plot_curr,axis=0)[0], np.amax(plot_curr,axis=0)[1], 0.5)
 
     # Map the current_scan in the frame of referennce scan

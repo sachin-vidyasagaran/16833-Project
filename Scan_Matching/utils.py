@@ -37,7 +37,7 @@ def plot_pts(scan, x_max, y_max, cell_size):
     ax.set_yticks(major_ticks)
     ax.set_yticks(minor_ticks, minor=True)
 
-    plt.scatter(scan[:,0],scan[:,1])
+    plt.scatter(scan[:,1],scan[:,0])
     # plt.hold()
     plt.scatter(0,0,c='r',marker='*',s=100)
     # And a corresponding grid
@@ -77,8 +77,8 @@ def get_cartesian(laser_scan):
     Takes in a laser scan from angle anges (-pi/2 to pi/2)
     Returns readings in cartesian coordinates (n,2)
     '''
-    x = laser_scan[:,0]*np.sin(laser_scan[:,1])
-    y = laser_scan[:,0]*np.cos(laser_scan[:,1])
+    x = laser_scan[:,0]*np.cos(laser_scan[:,1])
+    y = laser_scan[:,0]*np.sin(laser_scan[:,1])
     return np.vstack((x,y)).T # (n,2)
 
 

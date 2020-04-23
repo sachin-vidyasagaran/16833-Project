@@ -2,6 +2,7 @@ from build_NDT import *
 from newton_optim import *
 from numpy import genfromtxt
 from utils import *
+from debug import *
 
 
 '''
@@ -116,7 +117,7 @@ def main():
     curr_ranges = pts_global - curr_pose
     curr_ranges = np.sqrt(np.sum(curr_ranges**2, axis=1))
     init_params = np.array([0,0,0])
-    estimated_params = scan_match(curr_ranges, ref_ranges, init_params)
+    estimated_params = scan_match_debug(curr_ranges, ref_ranges, init_params)
 
     
 
