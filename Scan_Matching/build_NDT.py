@@ -132,20 +132,20 @@ class NDT:
         Input: Numpy of laser readings (1D array)
         Output:
         '''
+        
+        laser_scan = get_scan_from_ranges(self.laser_ranges) # UNCOMMENT FOR ACTUAL TEST
 
-        laser_scan = get_scan_from_ranges(self.laser_ranges)
-
-        print(laser_scan.shape)
+        # print(laser_scan.shape)
         laser_scan = prune_maxed_out_scans(laser_scan)
-        print("PRUNED:")
-        print(laser_scan.shape)
+        # print("PRUNED:")
+        # print(laser_scan.shape)
 
         scan_xy = get_cartesian(laser_scan) # Get readings as X,Y
-
 
         # Limits for discretization
         self.xy_max = np.amax(scan_xy,axis=0)
         self.xy_min = np.amin(scan_xy,axis=0)
+        plot_pts(scan_xy, self.xy_max[0], self.xy_max[1], self.cell_size)
 
         self.shift_xy = self.xy_min
         # Make bottom left corner as 0
@@ -169,7 +169,9 @@ class NDT:
             self.add_pt_to_maps(pt)
 
         self.populate_gaussians()
-
+        for i in range(4):
+            # for key in self.cell_maps[i]:
+            print(len(self.cell_maps[i]))
 
 
 def main():

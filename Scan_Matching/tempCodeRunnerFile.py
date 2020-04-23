@@ -1,1 +1,0 @@
-pts_dash = transform_pts(homogeneous_transformation(init_params), current_scan_xy) 

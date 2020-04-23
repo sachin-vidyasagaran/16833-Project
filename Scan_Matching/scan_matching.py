@@ -14,6 +14,7 @@ def scan_match(current_ranges, reference_ranges, init_params):
     between them
     '''
     assert(init_params.shape == (3,))
+
     current_scan = get_scan_from_ranges(current_ranges)
     current_scan = prune_maxed_out_scans(current_scan)
 
@@ -79,27 +80,45 @@ def load_data():
     return timestamps, odoms, laser_scans
 
 def main():
-    timestamps, odoms, laser_scans = load_data()
+    # timestamps, odoms, laser_scans = load_data()
 
-    # Construct the NDT for the first timestamp
-    # init_NDT = NDT(laser_scans[0,:])
-    # init_NDT.build_NDT()
+    # # Construct the NDT for the first timestamp
+    # # init_NDT = NDT(laser_scans[0,:])
+    # # init_NDT.build_NDT()
 
-    t_ref = 500
-    t_curr = 501
-    curr_scan = laser_scans[t_curr,:]
-    ref_scan = laser_scans[t_ref,:]
-    params = odoms[t_curr,:] - odoms[t_ref,:]
-    # params = odoms[t_ref,:] - odoms[t_curr,:]
+    # t_ref = 500
+    # t_curr = 501
+    # curr_scan = laser_scans[t_curr,:]
+    # ref_scan = laser_scans[t_ref,:]
+    # params = odoms[t_curr,:] - odoms[t_ref,:]
+    # # params = odoms[t_ref,:] - odoms[t_curr,:]
 
-    print("Init params:")
-    print(params,'\n')
-    # params = params * 0.9
-    print(params,'\n')
+    # print("Init params:")
+    # print(params,'\n')
+    # # params = params * 0.9
+    # # print(params,'\n')
 
-    debug_plot(curr_scan, ref_scan, params)
+    # # debug_plot(curr_scan, ref_scan, params)
     # estimated_params = scan_match(curr_scan, ref_scan, params)
     # print("Estimated params: ",estimated_params)
+
+    # x_vals = (4-1)*np.random.random((12,1)) + 1
+    # y_vals = (5-4)*np.random.random((12,1)) + 4
+    x_vals = np.array([1.12, 1.22, 1.245, 1.5, 2.1, 2.21, 2.54, 3.49, 3.56, 3.63])
+    y_vals = np.array([4.45, 4.4, 4.56, 4.67, 4.55, 4.5, 4.44, 4.5, 4.56, 4.32])
+    pts_global = np.c_[x_vals,y_vals]
+
+    ref_pose = np.array([3.5,2.5])
+    ref_ranges = pts_global - ref_pose
+    ref_ranges = np.sqrt(np.sum(ref_ranges**2, axis=1))
+
+    curr_pose = np.array([1.5,3.5])
+    curr_ranges = pts_global - curr_pose
+    curr_ranges = np.sqrt(np.sum(curr_ranges**2, axis=1))
+    init_params = np.array([0,0,0])
+    estimated_params = scan_match(curr_ranges, ref_ranges, init_params)
+
+    
 
 if __name__ == "__main__":
     main()
