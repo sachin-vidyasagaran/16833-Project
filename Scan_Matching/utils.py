@@ -25,7 +25,7 @@ def transform_pts(H, scan):
 
     return (H @ scan.T)[0:2,:].T # Return in non-homogeneous form (n,2)
 
-def plot_pts(scan, xy_max, xy_min, cell_size):
+def plot_scan(scan, xy_max, xy_min, cell_size):
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -48,6 +48,32 @@ def plot_pts(scan, xy_max, xy_min, cell_size):
 
     # plt.axis('equal')
     plt.show()
+
+def plot_2_scans(scan1, scan2, xy_max, xy_min, cell_size):
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    major_ticks = np.arange(xy_min[0], xy_max[0], cell_size)
+    minor_ticks = np.arange(xy_min[1], xy_max[1], cell_size)
+    ax.set_xticks(major_ticks)
+    ax.set_xticks(minor_ticks, minor=True)
+    ax.set_yticks(major_ticks)
+    ax.set_yticks(minor_ticks, minor=True)
+
+    plt.scatter(scan1[:,1],scan1[:,0])
+    plt.scatter(scan2[:,1],scan2[:,0])
+    # plt.hold()
+    plt.scatter(0,0,c='r',marker='*',s=100)
+    # And a corresponding grid
+    ax.grid(which='both')
+
+    # Or if you want different settings for the grids:
+    ax.grid(which='minor', alpha=0.8)
+    ax.grid(which='major', alpha=0.8)
+
+    # plt.axis('equal')
+    plt.show()
+
 
 def make_non_singular(cov):
     e1, e2 = [cov[0,0],cov[1,1]]

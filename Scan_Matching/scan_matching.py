@@ -27,18 +27,18 @@ def scan_match(current_ranges, reference_ranges, init_params):
     ndt = NDT(reference_ranges)
     ndt.build_NDT()
 
-    plot_curr = ndt.standard_shift(current_scan_xy)
-    plot_pts(plot_curr, np.amax(plot_curr,axis=0)[0], np.amax(plot_curr,axis=0)[1], 0.5)
+    #plot_scan(current_scan_xy, ndt.xy_max, ndt.xy_min, 1)
 
-    # Map the current_scan in the frame of referennce scan
+    # Map the current_scan in the frame of reference scan
     pts_dash = transform_pts(homogeneous_transformation(init_params), current_scan_xy) # (n,2)
-    # plot_dash = pts_dash 
-    plot_dash = ndt.standard_shift(pts_dash)
-    plot_pts(plot_dash, np.amax(plot_dash,axis=0)[0], np.amax(plot_dash,axis=0)[1], 0.5)
+    # plot_dash = pts_dash
+
+    plot_2_scans(current_scan_xy, pts_dash, ndt.xy_max, ndt.xy_min, 1)
 
     assert(pts_dash.shape[0] == num_curr_pts)
     # Determine the correspoding distributions these points belong in
-    score, pts_means, pts_covs = ndt.get_score_and_distributions(ndt.standard_shift(pts_dash))
+    score, pts_means, pts_covs = ndt.get_score_and_distributions(pts_dash)
+    print("OOOO")
 
     # Optimize the score
     old_score = -float("inf")
@@ -47,12 +47,12 @@ def scan_match(current_ranges, reference_ranges, init_params):
     # Iterate till convergence
     for i in range(optim.iters):
         optim.set_consts(params)
-        optim.set_variables(ndt.standard_shift(pts_dash), ndt.standard_shift(current_scan_xy), pts_means, pts_covs)
+        optim.set_variables(pts_dash, current_scan_xy, pts_means, pts_covs)
         delta_param = optim.step()
         params += delta_param # Update params
         # Calculate new score
         pts_dash = transform_pts(homogeneous_transformation(params), current_scan_xy)
-        curr_score, pts_means, pts_covs = ndt.get_score_and_distributions(ndt.standard_shift(pts_dash))
+        curr_score, pts_means, pts_covs = ndt.get_score_and_distributions(pts_dash)
         # Break early if no more changes in score 
         # if (curr_score - old_score < 0.1):
         #     break
@@ -80,30 +80,30 @@ def load_data():
     return timestamps, odoms, laser_scans
 
 def main():
-    # timestamps, odoms, laser_scans = load_data()
+    timestamps, odoms, laser_scans = load_data()
 
-    # # Construct the NDT for the first timestamp
-    # # init_NDT = NDT(laser_scans[0,:])
-    # # init_NDT.build_NDT()
+    # Construct the NDT for the first timestamp
+    # init_NDT = NDT(laser_scans[0,:])
+    # init_NDT.build_NDT()
 
-    # t_ref = 500
-    # t_curr = 501
-    # curr_scan = laser_scans[t_curr,:]
-    # ref_scan = laser_scans[t_ref,:]
-    # params = odoms[t_curr,:] - odoms[t_ref,:]
-    # # params = odoms[t_ref,:] - odoms[t_curr,:]
+    t_ref = 500
+    t_curr = 501
+    curr_scan = laser_scans[t_curr,:]
+    ref_scan = laser_scans[t_ref,:]
+    params = odoms[t_curr,:] - odoms[t_ref,:]
 
-    # print("Init params:")
-    # print(params,'\n')
+    print("Init params:", params)
     # # params = params * 0.9
     # # print(params,'\n')
 
     # # debug_plot(curr_scan, ref_scan, params)
-    # estimated_params = scan_match(curr_scan, ref_scan, params)
-    # print("Estimated params: ",estimated_params)
+    estimated_params = scan_match(curr_scan, ref_scan, params)
+    print("Estimated params: ", estimated_params)
 
     # x_vals = (4-1)*np.random.random((12,1)) + 1
     # y_vals = (5-4)*np.random.random((12,1)) + 4
+
+    '''
     x_vals = np.array([1.12, 1.22, 1.245, 1.5, 2.1, 2.21, 2.54, 3.49, 3.56, 3.63])
     y_vals = np.array([4.45, 4.4, 4.56, 4.67, 4.55, 4.5, 4.44, 4.5, 4.56, 4.32])
     pts_global = np.c_[x_vals,y_vals]
@@ -117,8 +117,8 @@ def main():
     curr_ranges = np.sqrt(np.sum(curr_ranges**2, axis=1))
     init_params = np.array([0,0,0])
     estimated_params = scan_match(curr_ranges, ref_ranges, init_params)
+    '''
 
-    
 
 if __name__ == "__main__":
     main()

@@ -17,13 +17,13 @@ def scan_match_debug(current_ranges, reference_ranges, init_params):
     ndt.build_NDT()
 
     plot_curr = ndt.standard_shift(current_scan_xy)
-    plot_pts(plot_curr, np.amax(plot_curr,axis=0)[0], np.amax(plot_curr,axis=0)[1], 0.5)
+    plot_scan(plot_curr, np.amax(plot_curr,axis=0)[0], np.amax(plot_curr,axis=0)[1], 0.5)
 
     # Map the current_scan in the frame of referennce scan
     pts_dash = transform_pts(homogeneous_transformation(init_params), current_scan_xy) # (n,2)
     # plot_dash = pts_dash 
     plot_dash = ndt.standard_shift(pts_dash)
-    plot_pts(plot_dash, np.amax(plot_dash,axis=0)[0], np.amax(plot_dash,axis=0)[1], 0.5)
+    plot_scan(plot_dash, np.amax(plot_dash,axis=0)[0], np.amax(plot_dash,axis=0)[1], 0.5)
 
     assert(pts_dash.shape[0] == num_curr_pts)
     # Determine the correspoding distributions these points belong in
@@ -68,13 +68,13 @@ def debug_plot(current_ranges, reference_ranges, init_params):
     current_scan = get_scan_from_ranges(current_ranges)
     current_scan = prune_maxed_out_scans(current_scan)
     current_scan_xy = get_cartesian(current_scan)   # Get scans in cartesian coordinates
-    # plot_pts(current_scan_xy, np.amax(current_scan_xy,axis=0)[0], np.amax(current_scan_xy,axis=0)[1], 0.5)
+    # plot_scan(current_scan_xy, np.amax(current_scan_xy,axis=0)[0], np.amax(current_scan_xy,axis=0)[1], 0.5)
 
     # Reference Scan
     reference_scan = get_scan_from_ranges(reference_ranges)
     reference_scan = prune_maxed_out_scans(reference_scan)
     reference_scan_xy = get_cartesian(reference_scan)   # Get scans in cartesian coordinates
-    # plot_pts(reference_scan_xy, np.amax(reference_scan_xy,axis=0)[0], np.amax(reference_scan_xy,axis=0)[1], 0.5)
+    # plot_scan(reference_scan_xy, np.amax(reference_scan_xy,axis=0)[0], np.amax(reference_scan_xy,axis=0)[1], 0.5)
 
     with open("test_curr.csv", "w", newline="") as f:
         writer = csv.writer(f)

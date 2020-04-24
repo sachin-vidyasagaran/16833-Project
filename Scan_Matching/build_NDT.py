@@ -26,22 +26,25 @@ class NDT:
 
     def get_score_and_distributions(self, pts):
         '''
+        Takes in a current scan after being transformed to the NDT frame,
+        and computes the total score of the overlay, and the distribution
         '''
         assert(pts.shape[1]== 2)
-        # Pts first need to be transformed such that robot is at bottom left
 
         pts_means = []
         pts_covs = []
         total_score = 0
+
         # Iterate over pts
         for i in range(pts.shape[0]):
-            hashes, _ = self.get_hashes_locs(pts[i,:])
+            hashes = self.get_hashes_locs(pts[i,:])
             best_scr = -float("inf")
             pt_mean = np.zeros(2)
             pt_cov = np.zeros((2,2))
+            # Iterate over maps
             for j in range(len(self.cell_maps)):
                 if (hashes[j] not in self.cell_maps[j]):
-                    continue
+                    continue    # NOTE: Happened for one point in one map for the first scan
                 mean = self.cell_maps[j][hashes[j]].mean
                 cov = self.cell_maps[j][hashes[j]].covariance
                 scr = calc_score_pt(pts[i,:],mean, cov)
@@ -52,7 +55,7 @@ class NDT:
                     best_scr = scr
             pts_means.append(pt_mean)
             pts_covs.append(pt_cov)
-        
+
         return total_score, pts_means, pts_covs
 
 
@@ -144,7 +147,7 @@ class NDT:
         # Limits for discretization
         self.xy_max = np.array([100, 100])
         self.xy_min = np.array([-100, -100])
-        plot_pts(scan_xy, self.xy_max, self.xy_min, self.cell_size)
+        plot_scan(scan_xy, self.xy_max, self.xy_min, self.cell_size)
 
         
 
@@ -157,9 +160,9 @@ class NDT:
             self.add_pt_to_maps(pt)
 
         self.populate_gaussians()
-        for i in range(4):
+        # for i in range(4):
             # for key in self.cell_maps[i]:
-            print(len(self.cell_maps[i]))
+            # print(len(self.cell_maps[i]))
 
 
 def main():
