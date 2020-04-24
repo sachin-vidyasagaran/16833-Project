@@ -5,6 +5,7 @@ import csv
 import matplotlib.pyplot as plt
 from utils import *
 
+
 class Cell:
     def __init__(self, x, y):
         self.x = x
@@ -13,11 +14,11 @@ class Cell:
         self.covariance = np.zeros((2,2))
         self.pts = []
 
+
 class NDT:
     def __init__(self, laser_ranges):
         self.laser_ranges = laser_ranges
         self.cell_size = 0.5    # NOTE: Need to tune
-        self.cols = None # For hashing
         self.cell_maps = [{},{},{},{}]
         self.xy_max = None
         self.xy_min = None
@@ -29,6 +30,7 @@ class NDT:
         pts_dash = transform_pts(homogeneous_transformation(params), self.current_scan)
         score, _, _ = self.get_score_and_distributions(pts_dash)
         return -score
+
 
     def get_score_and_distributions(self, pts):
         '''
@@ -68,6 +70,7 @@ class NDT:
     def hsh(self, pt):
         return (pt[0], pt[1]) # Return as tuple
 
+
     def get_hashes_locs(self, pt):
         '''
         Returns indices of where the pt is in the map
@@ -99,14 +102,13 @@ class NDT:
 
     def calc_mean_covariance(self, cell_map):
         ''' Iterate over map and populate mean and variance vals '''
-        # print(len(cell_map))
         for idx in cell_map:
             pts = np.asarray(cell_map[idx].pts) # Array of pts (n,2)
-            # print(pts.shape)
             cell_map[idx].mean = np.mean(pts, axis=0)
             var = np.var(pts, axis=0)
             var = np.array([[var[0], 0],[0, var[1]]])
             cell_map[idx].covariance = var
+
 
     def populate_gaussians(self):
         '''
@@ -114,7 +116,6 @@ class NDT:
         '''
         for m in self.cell_maps:
             self.calc_mean_covariance(m) # TODO:Check if need to make a deep copy here
-
 
 
     def build_NDT(self, laser_ranges=None):
@@ -127,39 +128,13 @@ class NDT:
             self.laser_ranges = laser_ranges
 
         laser_scan = get_scan_from_ranges(self.laser_ranges)
-
-        # print(laser_scan.shape)
         laser_scan = prune_maxed_out_scans(laser_scan)
-        # print("PRUNED:")
-        # print(laser_scan.shape)
-
         scan_xy = get_cartesian(laser_scan) # Get readings as X,Y
-
-        # =============================== UNCOMMENT FOR ACTUAL TEST ==============================
-
-        # # ======================= DEBUG===========================================
-        # scan_xy = np.array([[-2.38 ,  1.95 ],
-        #                     [-2.28 ,  1.9  ],
-        #                     [-2.255,  2.06 ],
-        #                     [-2.   ,  2.17 ],
-        #                     [-1.4  ,  2.05 ],
-        #                     [-1.29 ,  2.   ],
-        #                     [-0.96 ,  1.94 ],
-        #                     [-0.01 ,  2.   ],
-        #                     [ 0.06 ,  2.06 ],
-        #                     [ 0.13 ,  1.82 ]])
-
-    # ======================= DEBUG===========================================
-
 
         # Limits for discretization
         self.xy_max = np.array([100, 100])
         self.xy_min = np.array([-100, -100])
         # plot_scan(scan_xy, self.xy_max, self.xy_min, self.cell_size)
-
-
-
-        self.cols = int((self.xy_max[1] - self.xy_min[1])/self.cell_size) # Number of cols in discretization
 
         # Iterate over scan_xy and populate map
         for i in range(scan_xy.shape[0]):
@@ -168,9 +143,6 @@ class NDT:
             self.add_pt_to_maps(pt)
 
         self.populate_gaussians()
-        # for i in range(4):
-            # for key in self.cell_maps[i]:
-            # print(len(self.cell_maps[i]))
 
 
 def main():
