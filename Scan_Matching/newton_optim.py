@@ -24,7 +24,7 @@ class NewtonOptimizer:
         self.param_curr = param_curr # Current estimate of the transformation (3,)
         self.cos_phi = np.cos(param_curr[2])
         self.sin_phi = np.sin(param_curr[2])
-    
+
     def set_variables(self, pts_dash, pts, pts_means, pts_covs):
         self.pts_dash = pts_dash
         self.pts = pts
@@ -71,7 +71,7 @@ class NewtonOptimizer:
         '''
         g, H = self.get_gradient_and_hessian(pt_dash, pt, pt_mean, pt_cov)
         return -inv(H) @ g.T
-        
+
         # try:
         #     return -inv(H) @ g.T
         # except:
@@ -80,7 +80,7 @@ class NewtonOptimizer:
     # def batch_get_gradient_hessian(self, pt_dash, pt, pt_mean, pt_cov):
     #     '''
     #     -- pt is a single point in the second scan in the frame of the second scan (n,2)
-    #     -- pt_dash is a single point in the second scan transformed in the frame of 
+    #     -- pt_dash is a single point in the second scan transformed in the frame of
     #        first scan (n,2)
     #     -- pt_mean is the mean of the NDT cell of the transformed point (n,2)
     #     -- pt_cov is the covariance of the NDT cell of the transformed point (2n,2n)
@@ -96,6 +96,9 @@ class NewtonOptimizer:
         delta_p = np.zeros(3,)
         for i in range(self.pts.shape[0]):
             delta_p += self.pt_increment(self.pts_dash[i], self.pts[i], self.pts_means[i], self.pts_covs[i])
+            print(delta_p)  #NOTE: delta_p is blowing up. after the first point itself, the params are increasing by ~8.0 each!
+            print(self.pts_dash[i], self.pts[i], self.pts_means[i], self.pts_covs[i])
 
+        print(done)
         return delta_p
 
