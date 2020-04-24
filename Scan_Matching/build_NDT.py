@@ -16,7 +16,7 @@ class Cell:
 class NDT:
     def __init__(self, laser_ranges):
         self.laser_ranges = laser_ranges
-        self.cell_size = 0.05    # NOTE: Need to tune
+        self.cell_size = 0.5    # NOTE: Need to tune
         self.cols = None # For hashing
         self.cell_maps = [{},{},{},{}]
         self.xy_max = None
@@ -115,16 +115,18 @@ class NDT:
         for m in self.cell_maps:
             self.calc_mean_covariance(m) # TODO:Check if need to make a deep copy here
 
-    
 
-    def build_NDT(self):
+
+    def build_NDT(self, laser_ranges=None):
         '''
         Creates a Normal Distribuion Transformation over current scan
         Input: Numpy of laser readings (1D array)
         Output:
         '''
-        # =============================== UNCOMMENT FOR ACTUAL TEST ==============================
-        laser_scan = get_scan_from_ranges(self.laser_ranges) 
+        if laser_ranges is not None:
+            self.laser_ranges = laser_ranges
+
+        laser_scan = get_scan_from_ranges(self.laser_ranges)
 
         # print(laser_scan.shape)
         laser_scan = prune_maxed_out_scans(laser_scan)
@@ -153,9 +155,9 @@ class NDT:
         # Limits for discretization
         self.xy_max = np.array([100, 100])
         self.xy_min = np.array([-100, -100])
-        plot_scan(scan_xy, self.xy_max, self.xy_min, self.cell_size)
+        # plot_scan(scan_xy, self.xy_max, self.xy_min, self.cell_size)
 
-        
+
 
         self.cols = int((self.xy_max[1] - self.xy_min[1])/self.cell_size) # Number of cols in discretization
 

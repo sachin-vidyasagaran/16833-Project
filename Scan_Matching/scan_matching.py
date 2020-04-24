@@ -9,7 +9,7 @@ import scipy.optimize
 2D Scan-Matching between two laser scans
 '''
 
-def scan_match(current_ranges, reference_ranges, init_params):
+def scan_match(ndt, current_ranges, init_params):
     '''
     Takes in two laser scans and returns an estimated transform
     between them
@@ -18,33 +18,25 @@ def scan_match(current_ranges, reference_ranges, init_params):
 
     current_scan = get_scan_from_ranges(current_ranges)
     current_scan = prune_maxed_out_scans(current_scan)
-
-    num_curr_pts = current_scan.shape[0]
-    # Get scans in cartesian coordinates
     current_scan_xy = get_cartesian(current_scan)
-
-    # Build NDT of reference scan if not already present
-    # TODO: Check if NDT already exists
-    ndt = NDT(reference_ranges)
-    ndt.build_NDT()
-
-    #plot_scan(current_scan_xy, ndt.xy_max, ndt.xy_min, 1)
 
     # Map the current_scan in the frame of reference scan
     pts_dash = transform_pts(homogeneous_transformation(init_params), current_scan_xy) # (n,2)
-    # plot_dash = pts_dash
+    assert(pts_dash.shape[0] == current_scan.shape[0])
 
     plot_2_scans(current_scan_xy, pts_dash, ndt.xy_max, ndt.xy_min, ndt.cell_size)
 
-    assert(pts_dash.shape[0] == num_curr_pts)
-    # Determine the correspoding distributions these points belong in
-    score, pts_means, pts_covs = ndt.get_score_and_distributions(pts_dash)
-    print("OOOO")
-
     ndt.current_scan = current_scan_xy
-    params = init_params
     result = scipy.optimize.minimize(ndt.optimizer_function, init_params, method="CG")
+    params = result.x
+    assert(params.shape == (3,))
+
+    matched_pts = transform_pts(homogeneous_transformation(params), current_scan_xy) # (n,2)
+    plot_2_scans(current_scan_xy, matched_pts, ndt.xy_max, ndt.xy_min, ndt.cell_size)
+    match_quality, _, _ = ndt.get_score_and_distributions(matched_pts)
+
     '''
+    ########### Custom Newton Optimization Code ############################
     # Optimize the score
     old_score = -float("inf")
     params = init_params
@@ -63,13 +55,8 @@ def scan_match(current_ranges, reference_ranges, init_params):
         # if (curr_score - old_score < 0.1):
         #     break
     '''
-    params = result.x
 
-    matched_pts = transform_pts(homogeneous_transformation(params), current_scan_xy) # (n,2)
-    plot_2_scans(current_scan_xy, matched_pts, ndt.xy_max, ndt.xy_min, ndt.cell_size)
-
-    assert(params.shape == (3,))
-    return params
+    return match_quality, params
 
 
 def load_data():
@@ -80,8 +67,8 @@ def load_data():
     laser_scans = data[:, 9:]   #(t,361)
 
     '''
-    NOTE: In the dataset, the transforms are all w.r.t 
-    some global reference frame and not w.r.t the first 
+    NOTE: In the dataset, the transforms are all w.r.t
+    some global reference frame and not w.r.t the first
     scan like in the NDT implementation. In order to
     account for this, all odometry values are shifted by
     the odometry at the first scan
@@ -91,45 +78,48 @@ def load_data():
     return timestamps, odoms, laser_scans
 
 def main():
+
+    #NOTE: Match quality is around 535-640. for great matches but also pretty bad matches;
+    #      match quality sometimes goes down to 200 for horrible matches.
+    #      This makes picking the right threshold tricky. Can a better metric be
+    #      used, or will proper matching fix this issue?
+
+    #NOTE: Currently, transforms are not being updated from match to match. We just take
+    #      consecutive matches and use the odom as the estimate
+
+    #NOTE: It seems like the optmization is falling into local minima. Better tuning should
+    #      hopefully avoid this
+
+
     timestamps, odoms, laser_scans = load_data()
 
-    # Construct the NDT for the first timestamp
-    # init_NDT = NDT(laser_scans[0,:])
-    # init_NDT.build_NDT()
+    start_timestamp = 438    # Default is 1, not 0
 
-    t_ref = 238
-    t_curr = 240
-    curr_scan = laser_scans[t_curr,:]
-    ref_scan = laser_scans[t_ref,:]
-    params = odoms[t_curr,:] - odoms[t_ref,:]
+    t_ref = 0
+    match_qual = 0
+    match_qual_threshold = float("inf")
 
-    print("Init params:", params)
-    # params = params * 0.9
-    # print(params,'\n')
+    # Instantiate NDT object
+    ndt = NDT(laser_scans[0,:])
 
-    # # debug_plot(curr_scan, ref_scan, params)
-    estimated_params = scan_match(curr_scan, ref_scan, params)
-    print("Estimated params: ", estimated_params)
+    for t in range(start_timestamp, timestamps.shape[0]):
+        print("-"*50)
+        print("Timestamp: ", t, '\n')
 
+        # If the quality is low, make a new NDT
+        if(match_qual < match_qual_threshold):
+            print("Low Quality- Making new NDT")
+            t_ref = t-1
+            ndt.build_NDT(laser_scans[t_ref,:])
 
-    # x_vals = (4-1)*np.random.random((12,1)) + 1
-    # y_vals = (5-4)*np.random.random((12,1)) + 4
+        curr_scan = laser_scans[t,:]
 
-    '''
-    x_vals = np.array([1.12, 1.22, 1.245, 1.5, 2.1, 2.21, 2.54, 3.49, 3.56, 3.63])
-    y_vals = np.array([4.45, 4.4, 4.56, 4.67, 4.55, 4.5, 4.44, 4.5, 4.56, 4.32])
-    pts_global = np.c_[x_vals,y_vals]
+        params = odoms[t,:] - odoms[t_ref,:]
+        print("Init params:", params)
 
-    ref_pose = np.array([3.5,2.5])
-    ref_ranges = pts_global - ref_pose
-    ref_ranges = np.sqrt(np.sum(ref_ranges**2, axis=1))
-
-    curr_pose = np.array([1.5,3.5])
-    curr_ranges = pts_global - curr_pose
-    curr_ranges = np.sqrt(np.sum(curr_ranges**2, axis=1))
-    init_params = np.array([0,0,0])
-    estimated_params = scan_match(curr_ranges, ref_ranges, init_params)
-    '''
+        match_qual, updated_params = scan_match(ndt, curr_scan, params)
+        print("Match Quality: ", match_qual)
+        print("Estimated params: ", updated_params)
 
 
 if __name__ == "__main__":
