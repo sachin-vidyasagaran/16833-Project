@@ -16,13 +16,19 @@ class Cell:
 class NDT:
     def __init__(self, laser_ranges):
         self.laser_ranges = laser_ranges
-        self.cell_size = 1    # NOTE: Need to tune
+        self.cell_size = 0.05    # NOTE: Need to tune
         self.cols = None # For hashing
         self.cell_maps = [{},{},{},{}]
         self.xy_max = None
         self.xy_min = None
         self.shift_xy = None
+        self.current_scan = None
 
+
+    def optimizer_function(self, params):
+        pts_dash = transform_pts(homogeneous_transformation(params), self.current_scan)
+        score, _, _ = self.get_score_and_distributions(pts_dash)
+        return -score
 
     def get_score_and_distributions(self, pts):
         '''

@@ -2,6 +2,7 @@ from build_NDT import *
 from newton_optim import *
 from numpy import genfromtxt
 from utils import *
+import scipy.optimize
 
 
 '''
@@ -33,13 +34,17 @@ def scan_match(current_ranges, reference_ranges, init_params):
     pts_dash = transform_pts(homogeneous_transformation(init_params), current_scan_xy) # (n,2)
     # plot_dash = pts_dash
 
-    plot_2_scans(current_scan_xy, pts_dash, ndt.xy_max, ndt.xy_min, 1)
+    plot_2_scans(current_scan_xy, pts_dash, ndt.xy_max, ndt.xy_min, ndt.cell_size)
 
     assert(pts_dash.shape[0] == num_curr_pts)
     # Determine the correspoding distributions these points belong in
     score, pts_means, pts_covs = ndt.get_score_and_distributions(pts_dash)
     print("OOOO")
 
+    ndt.current_scan = current_scan_xy
+    params = init_params
+    result = scipy.optimize.minimize(ndt.optimizer_function, init_params, method="CG")
+    '''
     # Optimize the score
     old_score = -float("inf")
     params = init_params
@@ -57,6 +62,11 @@ def scan_match(current_ranges, reference_ranges, init_params):
         # Break early if no more changes in score
         # if (curr_score - old_score < 0.1):
         #     break
+    '''
+    params = result.x
+
+    matched_pts = transform_pts(homogeneous_transformation(params), current_scan_xy) # (n,2)
+    plot_2_scans(current_scan_xy, matched_pts, ndt.xy_max, ndt.xy_min, ndt.cell_size)
 
     assert(params.shape == (3,))
     return params
@@ -87,19 +97,20 @@ def main():
     # init_NDT = NDT(laser_scans[0,:])
     # init_NDT.build_NDT()
 
-    t_ref = 500
-    t_curr = 501
+    t_ref = 238
+    t_curr = 240
     curr_scan = laser_scans[t_curr,:]
     ref_scan = laser_scans[t_ref,:]
     params = odoms[t_curr,:] - odoms[t_ref,:]
 
     print("Init params:", params)
-    # # params = params * 0.9
-    # # print(params,'\n')
+    # params = params * 0.9
+    # print(params,'\n')
 
     # # debug_plot(curr_scan, ref_scan, params)
     estimated_params = scan_match(curr_scan, ref_scan, params)
     print("Estimated params: ", estimated_params)
+
 
     # x_vals = (4-1)*np.random.random((12,1)) + 1
     # y_vals = (5-4)*np.random.random((12,1)) + 4

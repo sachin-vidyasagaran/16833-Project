@@ -116,7 +116,7 @@ def calc_score_pt(pt, mean, cov):
     cov = make_non_singular(cov)
     # print(cov)
     cov_inv = inv(cov)
-    
+
     s = np.exp((-q.T @ cov_inv @ q)/2)
     return s
 
