@@ -12,7 +12,7 @@ def homogeneous_transformation(params):
     H = np.array([[np.cos(phi),   -np.sin(phi),   tx],
                   [np.sin(phi),    np.cos(phi),   ty],
                   [0,              0,              1]])
-    
+
     return H
 
 def transform_pts(H, scan):
@@ -85,17 +85,17 @@ def make_non_singular(cov):
         # print("Here")
         cov[0,0] = 0.01
         cov[1,1] = 0.01
-    
+
     elif (e1 < 0.001*e2):
         cov[0,0] = 0.001*e2
 
     elif (e2 < 0.001*e1):
         cov[1,1] = 0.001*e1
-        
+
     # print(cov[0,0], cov[1,1])
     return cov
-    
-        
+
+
 
 def get_cartesian(laser_scan):
     '''
@@ -116,7 +116,7 @@ def calc_score_pt(pt, mean, cov):
     cov = make_non_singular(cov)
     # print(cov)
     cov_inv = inv(cov)
-    
+
     s = np.exp((-q.T @ cov_inv @ q)/2)
     return s
 
@@ -125,7 +125,7 @@ def get_scan_from_ranges(laser_ranges):
     nums = laser_ranges.shape[0]
     laser_bearing = np.linspace(-np.pi/2,np.pi/2,num=nums)
     laser_scan = np.vstack((laser_ranges,laser_bearing))
-    return laser_scan.T # (n,2) 
+    return laser_scan.T # (n,2)
 
 
 def prune_maxed_out_scans(laser_scan):
