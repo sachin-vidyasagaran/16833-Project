@@ -4,6 +4,7 @@ import numpy as np
 import csv
 import matplotlib.pyplot as plt
 from utils import *
+from scipy.linalg import block_diag
 
 
 class Cell:
@@ -22,7 +23,6 @@ class NDT:
         self.cell_maps = [{},{},{},{}]
         self.xy_max = None
         self.xy_min = None
-        self.shift_xy = None
         self.current_scan = None
 
 
@@ -30,6 +30,55 @@ class NDT:
         pts_dash = transform_pts(homogeneous_transformation(params), self.current_scan)
         score, _, _ = self.get_score_and_distributions(pts_dash)
         return -score
+
+    def optim_vars(self, params):
+
+        pts_dash = transform_pts(homogeneous_transformation(params), self.current_scan)
+        score, pts_means, pts_covs = self.get_score_and_distributions(pts_dash)
+
+        num_pts = pts_dash.shape[0]
+        q = (pts_dash - np.array(pts_means)).flatten() # (2n,)
+        cov = block_diag(*pts_covs) # (2n,2n)
+        assert(cov.shape == (2*num_pts, 2*num_pts))
+        cov_inv = inv(cov)
+        rec_1 = q @ cov_inv #(1,2n)
+        
+        cos_phi, sin_phi = [np.cos(params[2]), np.sin(params[2])] #Const for 1 iteration
+        curr_rep = np.repeat(self.current_scan, repeats=2, axis=0) #(2n, 2)
+        left_block = np.c_[np.tile(np.array([1, 0]),(num_pts,1)).flatten(), np.tile(np.array([0, 1]),(num_pts,1)).flatten()]
+
+        right_block = curr_rep[:,0]*np.tile(np.array([-sin_phi, cos_phi]),(num_pts,1)).flatten() \
+                      - curr_rep[:,1]*np.tile(np.array([cos_phi, sin_phi]),(num_pts,1)).flatten()
+        right_block = curr_rep * np.tile(np.array([[-sin_phi, -cos_phi],\
+                                                    [cos_phi, -sin_phi]]),(num_pts,1))
+        right_block = right_block.sum(axis=1)                                                    
+        
+        J = np.c_[left_block, right_block] #(2n, 3)
+        assert(J.shape == (2*num_pts, 3))
+
+        op_vars = [score, rec_1, cos_phi, sin_phi, J, cov_inv]
+        return op_vars
+
+    def get_jacobian(self, params):
+        score, rec_1, cos_phi, sin_phi, J, cov_inv = self.optim_vars(params)
+        g = -score*(rec_1 @ J)
+        return g
+
+    def get_hessian(self, params):
+        score, rec_1, cos_phi, sin_phi, J, cov_inv = self.optim_vars(params)
+        H_1 = (rec_1 @ J).T @ (rec_1 @ J) # (3,3) one part of hessian
+        num_pts = self.current_scan.shape[0]
+
+        curr_rep = np.repeat(self.current_scan, repeats=2, axis=0) #(2n, 2)
+        right_block = curr_rep * np.tile(np.array([[-cos_phi, sin_phi],\
+                                                    [-sin_phi, -cos_phi]]),(num_pts,1))
+        right_block = right_block.sum(axis=1) 
+        H_2 = np.zeros((3,3)) 
+        H_2[2,2] = rec_1 @ right_block
+        H_3 = -J.T @ cov_inv @ J
+        H = -score * (H_1 + H_2 + H_3) 
+        
+        return H
 
 
     def get_score_and_distributions(self, pts):
@@ -62,7 +111,7 @@ class NDT:
                     pt_cov = cov
                     best_scr = scr
             pts_means.append(pt_mean)
-            pts_covs.append(pt_cov)
+            pts_covs.append(make_non_singular(pt_cov))
 
         return total_score, pts_means, pts_covs
 
@@ -124,30 +173,17 @@ class NDT:
         Input: Numpy of laser readings (1D array)
         Output:
         '''
-<<<<<<< HEAD
-        laser_scan = get_scan_from_ranges(self.laser_ranges) 
-        laser_scan = prune_maxed_out_scans(laser_scan)
-
-=======
         if laser_ranges is not None:
             self.laser_ranges = laser_ranges
 
         laser_scan = get_scan_from_ranges(self.laser_ranges)
         laser_scan = prune_maxed_out_scans(laser_scan)
->>>>>>> 4f71b954d9792f348aa4c6229e44b1e0f1f4d1c2
         scan_xy = get_cartesian(laser_scan) # Get readings as X,Y
 
         # Limits for discretization
         self.xy_max = np.array([100, 100])
         self.xy_min = np.array([-100, -100])
         # plot_scan(scan_xy, self.xy_max, self.xy_min, self.cell_size)
-<<<<<<< HEAD
-
-        
-
-        self.cols = int((self.xy_max[1] - self.xy_min[1])/self.cell_size) # Number of cols in discretization
-=======
->>>>>>> 4f71b954d9792f348aa4c6229e44b1e0f1f4d1c2
 
         # Iterate over scan_xy and populate map
         for i in range(scan_xy.shape[0]):
@@ -156,11 +192,6 @@ class NDT:
             self.add_pt_to_maps(pt)
 
         self.populate_gaussians()
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> 4f71b954d9792f348aa4c6229e44b1e0f1f4d1c2
 
 def main():
     a = np.array([1.40,1.39,1.39,1.39,1.38,1.36,1.37,1.36,1.35,1.34,1.34,1.33,1.33,1.32,1.32,1.31,1.31,1.31,1.32,1.34,1.33,1.30,1.29,1.31,81.91,81.91,81.91,81.91,1.11,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,0.78,0.73,0.73,0.71,0.72,0.72,0.72,0.71,0.71,0.71,0.71,0.70,0.71,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,81.91,1.75,1.72,1.70,1.70,1.71,1.71,1.83,3.35,3.41,3.49,3.57,3.65,3.69,3.68,3.66,3.64,3.62,3.61,3.59,3.58,3.57,3.56,3.55,3.54,3.53,3.52,3.51,3.50,3.50,3.21,2.91,2.91,6.20,6.47,6.79,6.96,6.95,6.95,7.12,6.89,6.87,6.66,6.39,6.37,6.36,6.36,6.35,6.35,6.35,6.36,6.35,6.34,4.37,4.33,4.34,4.34,4.34,4.34,4.34,4.34,4.34,4.34,4.34,4.35,4.35,4.34,4.35,4.36,4.36,4.37,4.37,4.38,4.38,4.38,4.39,4.40,4.41,4.42,4.43,4.43,4.44,4.45,4.46,4.47,4.47,4.48,4.49,4.51,4.51,4.53,4.54,4.56,4.56,4.57,4.59,3.25,3.26,4.64,2.88,2.73,2.78,2.76,2.76,2.77,2.80,2.82,2.83,2.83,2.97,2.98,2.89,2.93,2.96,2.78,2.78,2.79,2.88,5.23,5.25,5.24,5.26,5.34,7.16,7.09,6.99,6.63,6.52,6.51,6.49,6.40,6.31,6.23,6.16,5.99,5.92,5.90,5.91,5.81,5.79,5.83,5.86,5.82,5.76,5.70,5.66,5.61,5.56,5.51,5.47,5.42,5.37,4.76,4.62,4.60,4.56,4.52,4.49,4.46,4.44,4.40,4.37,4.34,4.31,4.28,4.26,4.23,4.21,4.18,4.16,4.13,4.11,4.09,4.07,4.05,4.03,4.01,3.98,3.97,3.95,3.93,3.91,3.89,3.87,3.87,3.85,3.83,3.82,3.80,3.78,3.77,3.76,3.74,3.71,3.69,3.68,3.68,3.67,3.66,3.65,3.64,3.63,3.62,3.61,3.60,3.66,3.82,3.97,4.09,4.10,4.08,4.08,4.07,4.06,4.05,4.05,4.24,4.49,5.06,5.50,5.50,5.67,6.11,6.63,7.17,6.21,6.17,6.09,6.20,6.29,6.21,6.15,6.19,6.46,6.47,6.09,6.53,6.17,11.95,11.89,2.69,2.70,2.67,2.65,2.66,2.65,2.62,2.66,2.70])

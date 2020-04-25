@@ -57,11 +57,11 @@ class NewtonOptimizer:
         H_2[2,2] = rec_1 @ np.array([-pt[0]*self.cos_phi + pt[1]*self.sin_phi, -pt[0]*self.sin_phi - pt[1]*self.cos_phi])
         H_3 = -J.T @ cov_inv @ J
 
-        H = s * (H_1 + H_2 + H_3) #TODO: Check if hessian is positive definite
+        H = s * (H_1 + H_2 + H_3) 
         w, v = LA.eig(H)
         self.lmda = abs(min(w)) + self.lmbda_buffer
-        # if ((w<=0).any()):
-        #     H += self.lmda * np.eye(3)
+        if ((w<=0).any()):
+            H += self.lmda * np.eye(3)
         print(H)
         return g, H
 
@@ -72,22 +72,6 @@ class NewtonOptimizer:
         g, H = self.get_gradient_and_hessian(pt_dash, pt, pt_mean, pt_cov)
         return -inv(H) @ g.T
 
-        # try:
-        #     return -inv(H) @ g.T
-        # except:
-        #     print(H)
-
-    # def batch_get_gradient_hessian(self, pt_dash, pt, pt_mean, pt_cov):
-    #     '''
-    #     -- pt is a single point in the second scan in the frame of the second scan (n,2)
-    #     -- pt_dash is a single point in the second scan transformed in the frame of
-    #        first scan (n,2)
-    #     -- pt_mean is the mean of the NDT cell of the transformed point (n,2)
-    #     -- pt_cov is the covariance of the NDT cell of the transformed point (2n,2n)
-    #     Returns: (1,3) g for a single point, (3,3) Hessian for a single point
-    #     '''
-    #     q = pt_dash - pt_mean # (n,2)
-
 
     def step(self):
         '''
@@ -96,9 +80,5 @@ class NewtonOptimizer:
         delta_p = np.zeros(3,)
         for i in range(self.pts.shape[0]):
             delta_p += self.pt_increment(self.pts_dash[i], self.pts[i], self.pts_means[i], self.pts_covs[i])
-            # print(delta_p)  #NOTE: delta_p is blowing up. after the first point itself, the params are increasing by ~8.0 each!
-            # print(self.pts_dash[i], self.pts[i], self.pts_means[i], self.pts_covs[i])
-
-        debug = 1
+        
         return delta_p
-
