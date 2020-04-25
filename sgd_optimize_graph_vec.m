@@ -1,4 +1,4 @@
-function pose_graph = sgd_optimize_graph(iters, initial, constraints, constraint_covariance)
+function pose_graph = sgd_optimize_graph_vec(iters, initial, constraints)
     % initial - initial estimate of pose graph, state space is incremental
     % of the form: [x0, x1-x0, x2-x1 ...]
     % constraints - constraints between each pose, each of the form: [x, y, theta]
@@ -17,19 +17,19 @@ function pose_graph = sgd_optimize_graph(iters, initial, constraints, constraint
     
     b = constraints.b;
     a = constraints.a;
+    covariance = constraints.covariance;
     trans = constraints.transform;
     num_constraints = size(constraints.a,1);
     
     pose_graph = initial;
     
     for iter = 1:iters
-%         tic
-%         iter
         gamma = Inf(3,1);
         % Update approximation M = J^T Sigma^-1 J
         M = zeros(num_states, 3);
         for c = 1:num_constraints
             % Constraint c corresponds to transform from Pa
+            constraint_covariance = diag(covariance(c,:));
             P_a = pose_graph(a(c), :);
             R = [ cos(P_a(3)), -sin(P_a(3)), 0;
                   sin(P_a(3)), cos(P_a(3)) , 0;
@@ -46,11 +46,11 @@ function pose_graph = sgd_optimize_graph(iters, initial, constraints, constraint
         % Constraint c corresponds to transform from Pa to Pb
             P_a = pose_graph(a(c), :);
             P_b = pose_graph(b(c), :);
+            constraint_covariance = diag(covariance(c,:));
             R = [ cos(P_a(3)), -sin(P_a(3)), 0;
                   sin(P_a(3)), cos(P_a(3)),  0;
                   0          , 0          ,  1];
             % Unsure about how transform works
-%             P_b_constraint = exampleHelperComposeTransform(P_a,trans(c,:));
             P_b_constraint = transformPoint(P_a,trans(c,:));
 
             residual = P_b_constraint' - P_b';
@@ -59,18 +59,21 @@ function pose_graph = sgd_optimize_graph(iters, initial, constraints, constraint
             
             % Update x, y, and theta
             learning_rate = 1./(gamma.*iter);
-            totalweight = 1./M(b(c),:);
+%             learning_rate = 1./(gamma);
+            totalweight = sum(1./M(a(c)+1:b(c),:),1);
             beta = (b(c)-a(c)).*d.*learning_rate;
             beta = residual.*(abs(beta) > abs(residual)) + beta.*(abs(beta) <= abs(residual));
             
-            dpose = beta'./M(b(c),:)./totalweight;
-%             dpose = beta;
-                
-            pose_graph(a(c)+1:end,:) = pose_graph(a(c)+1:end,:) + dpose;
+            for z = a(c)+1:b(c)
+                dpose = beta'./M(z,:)./totalweight;
+    %             dpose = beta';
+
+                pose_graph(z:end,:) = pose_graph(z:end,:) + dpose;
+%                 pose_graph(z:end,3) = wrapToPi(pose_graph(z:end,3));
+            end
             pose_graph(a(c)+1:end,3) = wrapToPi(pose_graph(a(c)+1:end,3));
             
         end
-%         toc
     end
 
 end

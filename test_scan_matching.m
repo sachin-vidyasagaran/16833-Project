@@ -1,6 +1,6 @@
 % [timestamp laser_pose_x laser_pose_y laser_pose_theta robot_pose_x robot_pose_y robot_pose_theta laser_tv laser_rv [range_readings]]
 close all
-scans = csvread('16833-Project/robot_laser.csv');
+scans = csvread('robot_laser.csv');
 
 % Set constants
 num_scans = size(scans,1);
@@ -13,6 +13,7 @@ laserScans = [];
 constraints = [];
 a = [];
 b = [];
+covariance = [];
 odometry = zeros(num_scans,3);
 prev_global = scans(1,2:4);
 
@@ -40,34 +41,31 @@ else
             referenceScan = laserScans(i-1);
             currentScan = laserScans(i);
             [ laserTransform, stats] = matchScans(currentScan,referenceScan, 'MaxIterations',500,'InitialPose',laserTransforms(end,:));
-    %             matchScans(laserScans(i),laserScans(i-1))];
             if stats.Score / currentScan.Count < 1.0
                 disp(['Low scan match score for index ' num2str(i) '. Score = ' num2str(stats.Score) '.']);
                 continue
             end
-            laserTransforms = [laserTransforms;
-                laserTransform];
-
+            laserTransforms = [laserTransforms; laserTransform];
+            cov = 1 / stats.Score;
+            cov = currentScan.Count / (stats.Score * stats.Score);
+            cov = currentScan.Count / stats.Score;
+            covariance = [ covariance ; cov cov cov ];
             a = [a ; i-1];
             b = [b ; i];
         end
 
     end
-    constraints = struct('transform', laserTransforms, 'a', a, 'b', b);
+    constraints = struct('transform', laserTransforms, 'a', a, 'b', b, 'covariance', covariance);
     save('constraints','constraints');
     save('odometry','odometry');
     save('laserScans','laserScans');
 end
 
-constraint_covariance = [1e-3 0    0   ;
-                         0    1e-3 0   ;
-                         0    0    1e-3];
-
 odom_path = cumsum(odometry,1);
 odom_path(:,3) = wrapToPi(odom_path(:,3));
 
 tic
-pose_graph = sgd_optimize_graph_vec(60, odom_path, constraints, constraint_covariance);
+pose_graph = sgd_optimize_graph_vec(100, odom_path, constraints);
 toc
 
 laserTransforms = constraints.transform;
@@ -83,9 +81,9 @@ toc
 figure
 hold on
 plot(odom_path(:,1),odom_path(:,2),'k.')
-plot(pose_graph(:,1),pose_graph(:,2),'r.')
 plot(ndt(:,1),ndt(:,2),'b.')
-legend('Odometry','SGD','NDT','Location','NorthWest')
+plot(pose_graph(:,1),pose_graph(:,2),'r.')
+legend('Odometry','NDT','SGD','Location','NorthWest')
 hold off
 
 % map_sgd = occupancyMap(60,60,20);
