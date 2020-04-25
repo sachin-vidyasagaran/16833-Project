@@ -37,7 +37,6 @@ def plot_scan(scan, xy_max, xy_min, cell_size):
     ax.set_yticks(minor_ticks, minor=True)
 
     plt.scatter(scan[:,1],scan[:,0])
-    # plt.hold()
     plt.scatter(0,0,c='r',marker='*',s=100)
     # And a corresponding grid
     ax.grid(which='both')
@@ -60,9 +59,8 @@ def plot_2_scans(scan1, scan2, xy_max, xy_min, cell_size):
     ax.set_yticks(major_ticks)
     ax.set_yticks(minor_ticks, minor=True)
 
-    plt.scatter(scan1[:,1],scan1[:,0])
+    plt.scatter(scan1[:,1],scan1[:,0], c='g')
     plt.scatter(scan2[:,1],scan2[:,0])
-    # plt.hold()
     plt.scatter(0,0,c='r',marker='*',s=100)
     # And a corresponding grid
     ax.grid(which='both')
@@ -77,12 +75,8 @@ def plot_2_scans(scan1, scan2, xy_max, xy_min, cell_size):
 
 def make_non_singular(cov):
     e1, e2 = [cov[0,0],cov[1,1]]
-    # print(e1, e2)
-    if (e1 < 0 or e2 < 0):
-        print("e1: ",e1, " e2: ",e2)
 
     if (e1 == 0.0 and e2 == 0.0):
-        # print("Here")
         cov[0,0] = 0.01
         cov[1,1] = 0.01
 
@@ -92,7 +86,6 @@ def make_non_singular(cov):
     elif (e2 < 0.001*e1):
         cov[1,1] = 0.001*e1
 
-    # print(cov[0,0], cov[1,1])
     return cov
 
 

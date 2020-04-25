@@ -9,6 +9,29 @@ import scipy.optimize
 2D Scan-Matching between two laser scans
 '''
 
+def optimize(ndt_obj, init_params, pts_dash, current_scan_xy, pts_means, pts_covs):
+    ########### Custom Newton Optimization Code ############################
+    # Optimize the score
+    old_score = -float("inf")
+    params = init_params
+    optim = NewtonOptimizer()
+    # Iterate till convergence
+    for i in range(optim.iters):
+        optim.set_consts(params)
+        optim.set_variables(pts_dash, current_scan_xy, pts_means, pts_covs)
+        delta_param = optim.step()
+        params += delta_param # Update params
+        # Calculate new score
+        pts_dash = transform_pts(homogeneous_transformation(params), current_scan_xy)
+        curr_score, pts_means, pts_covs = ndt_obj.get_score_and_distributions(pts_dash)
+
+
+        # Break early if no more changes in score
+        if (curr_score - old_score < 0.1):
+            break
+    
+    return params
+
 def scan_match(ndt, current_ranges, init_params):
     '''
     Takes in two laser scans and returns an estimated transform
@@ -27,7 +50,9 @@ def scan_match(ndt, current_ranges, init_params):
     plot_2_scans(current_scan_xy, pts_dash, ndt.xy_max, ndt.xy_min, ndt.cell_size)
 
     ndt.current_scan = current_scan_xy
-    result = scipy.optimize.minimize(ndt.optimizer_function, init_params, method="Nelder-Mead")#, options = {'maxiter':35})
+    # result = scipy.optimize.minimize(ndt.optimizer_function, init_params, method="CG")
+    result = scipy.optimize.minimize(ndt.optimizer_function, init_params, method="Nelder-Mead")
+    # result = scipy.optimize.minimize(ndt.optimizer_function, init_params, method="Newton-CG", jac=ndt.get_jacobian, hess=ndt.get_hessian)
     params = result.x
     assert(params.shape == (3,))
 
@@ -35,26 +60,6 @@ def scan_match(ndt, current_ranges, init_params):
     plot_2_scans(current_scan_xy, matched_pts, ndt.xy_max, ndt.xy_min, ndt.cell_size)
     match_quality, _, _ = ndt.get_score_and_distributions(matched_pts)
 
-    '''
-    ########### Custom Newton Optimization Code ############################
-    # Optimize the score
-    old_score = -float("inf")
-    params = init_params
-    optim = NewtonOptimizer()
-    # Iterate till convergence
-    for i in range(optim.iters):
-        optim.set_consts(params)
-        optim.set_variables(pts_dash, current_scan_xy, pts_means, pts_covs)
-        delta_param = optim.step()
-        params += delta_param # Update params
-        # Calculate new score
-        pts_dash = transform_pts(homogeneous_transformation(params), current_scan_xy)
-        curr_score, pts_means, pts_covs = ndt.get_score_and_distributions(pts_dash)
-
-        # Break early if no more changes in score
-        # if (curr_score - old_score < 0.1):
-        #     break
-    '''
 
     return match_quality, params
 
@@ -105,7 +110,7 @@ def main():
 
     timestamps, odoms, laser_scans = load_data()
 
-    start_timestamp = 255    # Default is 1, not 0
+    start_timestamp = 430    # Default is 1, not 0
 
     t_ref = 0
     match_qual = 0
@@ -132,6 +137,7 @@ def main():
         match_qual, updated_params = scan_match(ndt, curr_scan, params)
         print("Match Quality: ", match_qual)
         print("Estimated params: ", updated_params)
+        break
 
         odoms[t,:] = updated_params + odoms[t_ref,:]
 

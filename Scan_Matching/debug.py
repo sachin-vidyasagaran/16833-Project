@@ -5,50 +5,6 @@ def get_scan_from_ranges_debug(laser_ranges, xy_scan):
     bearings = np.arctan2(xy_scan[:,1,xy_scan[:,0]])
     return np.c_[laser_ranges, bearings]
 
-def scan_match_debug(current_ranges, reference_ranges, init_params):
-    '''
-    Takes in two laser scans and returns an estimated transform
-    between them
-    '''
-    
-    # Build NDT of reference scan if not already present
-    # TODO: Check if NDT already exists
-    ndt = NDT(reference_ranges)
-    ndt.build_NDT()
-
-    plot_curr = ndt.standard_shift(current_scan_xy)
-    plot_scan(plot_curr, np.amax(plot_curr,axis=0)[0], np.amax(plot_curr,axis=0)[1], 0.5)
-
-    # Map the current_scan in the frame of referennce scan
-    pts_dash = transform_pts(homogeneous_transformation(init_params), current_scan_xy) # (n,2)
-    # plot_dash = pts_dash 
-    plot_dash = ndt.standard_shift(pts_dash)
-    plot_scan(plot_dash, np.amax(plot_dash,axis=0)[0], np.amax(plot_dash,axis=0)[1], 0.5)
-
-    assert(pts_dash.shape[0] == num_curr_pts)
-    # Determine the correspoding distributions these points belong in
-    score, pts_means, pts_covs = ndt.get_score_and_distributions(ndt.standard_shift(pts_dash))
-
-    # Optimize the score
-    old_score = -float("inf")
-    params = init_params
-    optim = NewtonOptimizer()
-    # Iterate till convergence
-    for i in range(optim.iters):
-        optim.set_consts(params)
-        optim.set_variables(ndt.standard_shift(pts_dash), ndt.standard_shift(current_scan_xy), pts_means, pts_covs)
-        delta_param = optim.step()
-        params += delta_param # Update params
-        # Calculate new score
-        pts_dash = transform_pts(homogeneous_transformation(params), current_scan_xy)
-        curr_score, pts_means, pts_covs = ndt.get_score_and_distributions(ndt.standard_shift(pts_dash))
-        # Break early if no more changes in score 
-        # if (curr_score - old_score < 0.1):
-        #     break
-
-    assert(params.shape == (3,))
-    return params
-
 def debug_plot(current_ranges, reference_ranges, init_params):
     '''
     Conclusions:
