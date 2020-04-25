@@ -19,7 +19,7 @@ class Cell:
 class NDT:
     def __init__(self, laser_ranges):
         self.laser_ranges = laser_ranges
-        self.cell_size = 0.5    # NOTE: Need to tune
+        self.cell_size = 1    # NOTE: Need to tune
         self.cell_maps = [{},{},{},{}]
         self.xy_max = None
         self.xy_min = None

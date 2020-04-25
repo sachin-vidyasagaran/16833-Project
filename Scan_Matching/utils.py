@@ -59,8 +59,8 @@ def plot_2_scans(scan1, scan2, xy_max, xy_min, cell_size):
     ax.set_yticks(major_ticks)
     ax.set_yticks(minor_ticks, minor=True)
 
-    plt.scatter(scan1[:,1],scan1[:,0], c='g')
-    plt.scatter(scan2[:,1],scan2[:,0])
+    plt.scatter(scan1[:,1],scan1[:,0])
+    plt.scatter(scan2[:,1],scan2[:,0], c='r')
     plt.scatter(0,0,c='r',marker='*',s=100)
     # And a corresponding grid
     ax.grid(which='both')

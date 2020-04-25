@@ -92,20 +92,7 @@ def main():
     #COBYLA : 1 seconds, goes fairly off
     #TNC : 1 seconds, goes fairly off
 
-    #NOTE: Match quality is around 535-640. for great matches but also pretty bad matches;
-    #      match quality sometimes goes down to 200 for horrible matches.
-    #      This makes picking the right threshold tricky. Can a better metric be
-    #      used, or will proper matching fix this issue?
-
-    #NOTE: Currently, transforms are not being updated from match to match. We just take
-    #      consecutive matches and use the odom as the estimate
-
-    #NOTE: Check the number of iterations of the optimizer
-
-    #NOTE: Setup cascading trasform initialization
-
-    #NOTE: It seems like the optmization is falling into local minima. Better tuning should
-    #      hopefully avoid this
+    #NOTE: Run entire code and save transforms. The write a script to plot the maps from odometry and NDT transforms
 
 
     timestamps, odoms, laser_scans = load_data()
@@ -137,7 +124,6 @@ def main():
         match_qual, updated_params = scan_match(ndt, curr_scan, params)
         print("Match Quality: ", match_qual)
         print("Estimated params: ", updated_params)
-        break
 
         odoms[t,:] = updated_params + odoms[t_ref,:]
 
