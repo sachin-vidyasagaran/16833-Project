@@ -27,7 +27,7 @@ def scan_match(ndt, current_ranges, init_params):
     plot_2_scans(current_scan_xy, pts_dash, ndt.xy_max, ndt.xy_min, ndt.cell_size)
 
     ndt.current_scan = current_scan_xy
-    result = scipy.optimize.minimize(ndt.optimizer_function, init_params, method="CG")
+    result = scipy.optimize.minimize(ndt.optimizer_function, init_params, method="Nelder-Mead")#, options = {'maxiter':35})
     params = result.x
     assert(params.shape == (3,))
 
@@ -79,6 +79,14 @@ def load_data():
 
 def main():
 
+    #Nelder-Mead : 1-2 seconds, Slight error after 10-15 iters. Doesnt improve with 25 iters and takes 3-4 seconds in this case
+    #Powell : 6-7 seconds, Works great sometimes, goes horribly off on others
+    #CG : 15 seconds, works great on some and horrible on others
+    #BFGS : 10 seconds, works great on some and horrible on others
+    #SLSQP : 1 seconds, goes way off
+    #COBYLA : 1 seconds, goes fairly off
+    #TNC : 1 seconds, goes fairly off
+
     #NOTE: Match quality is around 535-640. for great matches but also pretty bad matches;
     #      match quality sometimes goes down to 200 for horrible matches.
     #      This makes picking the right threshold tricky. Can a better metric be
@@ -87,13 +95,17 @@ def main():
     #NOTE: Currently, transforms are not being updated from match to match. We just take
     #      consecutive matches and use the odom as the estimate
 
+    #NOTE: Check the number of iterations of the optimizer
+
+    #NOTE: Setup cascading trasform initialization
+
     #NOTE: It seems like the optmization is falling into local minima. Better tuning should
     #      hopefully avoid this
 
 
     timestamps, odoms, laser_scans = load_data()
 
-    start_timestamp = 438    # Default is 1, not 0
+    start_timestamp = 255    # Default is 1, not 0
 
     t_ref = 0
     match_qual = 0
@@ -120,6 +132,8 @@ def main():
         match_qual, updated_params = scan_match(ndt, curr_scan, params)
         print("Match Quality: ", match_qual)
         print("Estimated params: ", updated_params)
+
+        odoms[t,:] = updated_params + odoms[t_ref,:]
 
 
 if __name__ == "__main__":

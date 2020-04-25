@@ -117,7 +117,10 @@ def calc_score_pt(pt, mean, cov):
     # print(cov)
     cov_inv = inv(cov)
 
-    s = np.exp((-q.T @ cov_inv @ q)/2)
+    dist_from_robot = (np.sum(mean**2))**0.5
+    # print(dist_from_robot)
+
+    s = np.exp((-q.T @ cov_inv @ q)/2) #* dist_from_robot
     return s
 
 
