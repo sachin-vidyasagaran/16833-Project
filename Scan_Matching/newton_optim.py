@@ -60,9 +60,9 @@ class NewtonOptimizer:
         H = s * (H_1 + H_2 + H_3) #TODO: Check if hessian is positive definite
         w, v = LA.eig(H)
         self.lmda = abs(min(w)) + self.lmbda_buffer
-        if ((w<=0).any()):
-            H += self.lmda * np.eye(3)
-
+        # if ((w<=0).any()):
+        #     H += self.lmda * np.eye(3)
+        print(H)
         return g, H
 
     def pt_increment(self, pt_dash, pt, pt_mean, pt_cov):
@@ -96,9 +96,9 @@ class NewtonOptimizer:
         delta_p = np.zeros(3,)
         for i in range(self.pts.shape[0]):
             delta_p += self.pt_increment(self.pts_dash[i], self.pts[i], self.pts_means[i], self.pts_covs[i])
-            print(delta_p)  #NOTE: delta_p is blowing up. after the first point itself, the params are increasing by ~8.0 each!
-            print(self.pts_dash[i], self.pts[i], self.pts_means[i], self.pts_covs[i])
+            # print(delta_p)  #NOTE: delta_p is blowing up. after the first point itself, the params are increasing by ~8.0 each!
+            # print(self.pts_dash[i], self.pts[i], self.pts_means[i], self.pts_covs[i])
 
-        print(done)
+        debug = 1
         return delta_p
 

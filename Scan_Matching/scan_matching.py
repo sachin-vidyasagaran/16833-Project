@@ -33,12 +33,11 @@ def scan_match(current_ranges, reference_ranges, init_params):
     pts_dash = transform_pts(homogeneous_transformation(init_params), current_scan_xy) # (n,2)
     # plot_dash = pts_dash
 
-    plot_2_scans(current_scan_xy, pts_dash, ndt.xy_max, ndt.xy_min, 1)
+    # plot_2_scans(current_scan_xy, pts_dash, ndt.xy_max, ndt.xy_min, 1)
 
     assert(pts_dash.shape[0] == num_curr_pts)
     # Determine the correspoding distributions these points belong in
     score, pts_means, pts_covs = ndt.get_score_and_distributions(pts_dash)
-    print("OOOO")
 
     # Optimize the score
     old_score = -float("inf")
@@ -53,6 +52,8 @@ def scan_match(current_ranges, reference_ranges, init_params):
         # Calculate new score
         pts_dash = transform_pts(homogeneous_transformation(params), current_scan_xy)
         curr_score, pts_means, pts_covs = ndt.get_score_and_distributions(pts_dash)
+        # plot_2_scans(current_scan_xy, pts_dash, ndt.xy_max, ndt.xy_min, 1)
+
 
         # Break early if no more changes in score
         # if (curr_score - old_score < 0.1):

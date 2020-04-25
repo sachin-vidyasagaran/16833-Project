@@ -78,8 +78,8 @@ def plot_2_scans(scan1, scan2, xy_max, xy_min, cell_size):
 def make_non_singular(cov):
     e1, e2 = [cov[0,0],cov[1,1]]
     # print(e1, e2)
-    if (e1 < 0 or e2 < 0):
-        print("e1: ",e1, " e2: ",e2)
+    # if (e1 < 0 or e2 < 0):
+        # print("e1: ",e1, " e2: ",e2)
 
     if (e1 == 0.0 and e2 == 0.0):
         # print("Here")
