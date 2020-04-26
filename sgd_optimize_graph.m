@@ -1,17 +1,7 @@
-function pose_graph = sgd_optimize_graph_vec(iters, initial, constraints)
+function [pose_graph, iter] = sgd_optimize_graph(initial, constraints, epsilon)
     % initial - initial estimate of pose graph, state space is incremental
     % of the form: [x0, x1-x0, x2-x1 ...]
     % constraints - constraints between each pose, each of the form: [x, y, theta]
-    
-    % Assert there is one fewer pose than constraint
-%     assert(size(initial,1) - size(constraints,1) == 1);
-    % Assert each pose in initial has form [x, y, theta]
-%     assert(size(initial,2) == 3);
-    % Assert each contraints has form [x, y, theta]
-%     assert(size(constraints,2) == 3);
-    % Assert constraint covariance is of correct size
-%     assert(size(constraint_covariance,1) == 3);
-%     assert(size(constraint_covariance,2) == 3);
     
     num_states = size(initial,1);
     
@@ -22,8 +12,14 @@ function pose_graph = sgd_optimize_graph_vec(iters, initial, constraints)
     num_constraints = size(constraints.a,1);
     
     pose_graph = initial;
+    pose_graph_prev = zeros(size(pose_graph));
     
-    for iter = 1:iters
+    delta = inf;
+    iter = 0;
+    
+    while delta > epsilon
+        pose_graph_prev = pose_graph;
+        iter = iter + 1;
         gamma = Inf(3,1);
         % Update approximation M = J^T Sigma^-1 J
         M = zeros(num_states, 3);
@@ -74,24 +70,8 @@ function pose_graph = sgd_optimize_graph_vec(iters, initial, constraints)
             pose_graph(a(c)+1:end,3) = wrapToPi(pose_graph(a(c)+1:end,3));
             
         end
+        graph_update = pose_graph - pose_graph_prev;
+        graph_update(:,3) = wrapToPi(graph_update(:,3));
+        delta = sum(sum(norm(graph_update,2),1));
     end
-
-end
-
-
-
-function p_b = transformPoint(p_a, t_ba)
-    % Ensure there are equal number of points and transformations
-    assert(size(p_a,1) == size(t_ba,1))
-%     T_ga = [ cos(p_a(3)), -sin(p_a(3)), p_a(1);
-%              sin(p_a(3)), cos(p_a(3)),  p_a(2);
-%              0          , 0          ,  1     ];
-%     T_ab = [ cos(t_ba(3)), -sin(t_ba(3)), t_ba(1);
-%              sin(t_ba(3)), cos(t_ba(3)) , t_ba(2);
-%              0           , 0            , 1      ];
-%     P_b = T_ga*T_ab*[0 ; 0 ;1]
-    p_b = [cos(p_a(:,3)).*t_ba(:,1)-sin(p_a(:,3)).*t_ba(:,2)+p_a(:,1), ...
-           sin(p_a(:,3)).*t_ba(:,1)+cos(p_a(:,3)).*t_ba(:,2)+p_a(:,2), ...
-           wrapToPi(p_a(:,3) + t_ba(:,3))                          ];
-
 end

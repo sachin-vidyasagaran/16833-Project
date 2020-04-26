@@ -19,11 +19,13 @@ prev_global = scans(1,2:4);
 
 initialPose = [0 0 0];
 laserTransforms = [initialPose];
+laserTransformsFull = [initialPose];
 
-if isfile('constraints.mat') && isfile('odometry.mat') && isfile('laserScans.mat')
+if isfile('constraints.mat') && isfile('odometry.mat') && isfile('laserScans.mat') && isfile('laserTransformsFull.mat')
     load('constraints.mat')
     load('odometry.mat')
     load('laserScans.mat')
+    load('laserTransformsFull.mat')
 else
     for i = 1:num_scans
         curr_global = scans(i,2:4);
@@ -31,7 +33,7 @@ else
         curr_odom(3) = wrapToPi(curr_odom(3));
         odometry(i,:) = curr_odom;
         prev_global = curr_global;
-        % 
+        
         laser_ranges = scans(i,10:end);
         in_range_idx = find(laser_ranges<max_range);
         laserScans = [laserScans; 
@@ -43,7 +45,10 @@ else
             [ laserTransform, stats] = matchScans(currentScan,referenceScan, 'MaxIterations',500,'InitialPose',laserTransforms(end,:));
             if stats.Score / currentScan.Count < 1.0
                 disp(['Low scan match score for index ' num2str(i) '. Score = ' num2str(stats.Score) '.']);
+                laserTransformsFull = [ laserTransformsFull; odometry(i,:)];
                 continue
+            else
+                laserTransformsFull = [ laserTransformsFull; laserTransform];
             end
             laserTransforms = [laserTransforms; laserTransform];
             cov = 1 / stats.Score;
@@ -59,82 +64,66 @@ else
     save('constraints','constraints');
     save('odometry','odometry');
     save('laserScans','laserScans');
+    save('laserTransformsFull','laserTransformsFull')
 end
 
 odom_path = cumsum(odometry,1);
 odom_path(:,3) = wrapToPi(odom_path(:,3));
 
 tic
-pose_graph = sgd_optimize_graph_vec(100, odom_path, constraints);
-toc
-
-laserTransforms = constraints.transform;
-
-tic
 ndt = [[0 0 0]];
-for i = 2:size(constraints.a,1)
-    absolutePose = transformPoint(ndt(i-1,:),laserTransforms(i,:));
+for i = 2:size(laserTransformsFull,1)
+    absolutePose = transformPoint(ndt(i-1,:),laserTransformsFull(i,:));
     ndt = [ndt; absolutePose];
 end
 toc
+
+tic
+[pose_graph, iters] = sgd_optimize_graph(odom_path, constraints, .1);
+toc
+iters
+
+sgd_residual = ndt - pose_graph ;
+sgd_residual(:,3) = wrapToPi(sgd_residual(:,3));
+sgd_residual = sum(sum(norm(sgd_residual,2),1))
+
+odom_error = ndt - odom_path ;
+odom_error(:,3) = wrapToPi(odom_error(:,3));
+odom_error = sum(sum(norm(odom_error,2),1))
+
 
 figure
 hold on
 plot(odom_path(:,1),odom_path(:,2),'k.')
 plot(ndt(:,1),ndt(:,2),'b.')
 plot(pose_graph(:,1),pose_graph(:,2),'r.')
-legend('Odometry','NDT','SGD','Location','NorthWest')
+legend('Odometry','Ground Truth','SGD','Location','NorthWest')
 hold off
 
-% map_sgd = occupancyMap(60,60,20);
-% map_sgd.GridLocationInWorld = [-20 -20];
-% 
-% map_ndt = occupancyMap(60,60,20);
-% map_ndt.GridLocationInWorld = [-20 -20];
-% 
-% numScans = size(constraints.a,1);
-% 
-% tic
-% % Loop through all the scans and calculate the relative poses between them
-% for idx = 1:numScans
-%     % Integrate the current laser scan into the probabilistic occupancy
-%     % grid.
-%     insertRay(map_sgd,pose_graph(idx,:),laserScans(constraints.a(idx),:),10);
-%     
+map_sgd = occupancyMap(70,70,20);
+map_sgd.GridLocationInWorld = [-30 -30];
+
+% map_ndt = occupancyMap(80,80,20);
+% map_ndt.GridLocationInWorld = [-40 -40];
+
+numScans = size(constraints.a,1);
+
+tic
+% Loop through all the scans and calculate the relative poses between them
+for idx = 1:numScans
+%     Integrate the current laser scan into the probabilistic occupancy
+%     grid.
+    insertRay(map_sgd,pose_graph(constraints.a(idx),:),laserScans(constraints.a(idx),:),10);
+    
 %     insertRay(map_ndt,ndt(idx,:),laserScans(constraints.a(idx),:),10);
-% 
-% end
-% toc
-% 
-% figure
-% show(map_sgd);
-% title('Occupancy grid map built using SGD');
-% 
+
+end
+toc
+
+figure
+show(map_sgd);
+title('Occupancy grid map built using SGD');
+
 % figure
 % show(map_ndt);
 % title('Occupancy grid map built using NDT');
-% 
-
-
-function p_b = transformPoint(p_a, t_ba)
-    % Ensure there are equal number of points and transformations
-    assert(size(p_a,1) == size(t_ba,1))
-    
-    
-%     T_ga = [ cos(p_a(3)), -sin(p_a(3)), p_a(1);
-%              sin(p_a(3)), cos(p_a(3)),  p_a(2);
-%              0          , 0          ,  1     ];
-%     T_ab = [ cos(t_ba(3)), -sin(t_ba(3)), t_ba(1);
-%              sin(t_ba(3)), cos(t_ba(3)) , t_ba(2);
-%              0           , 0            , 1      ];
-%     P_b = T_ga*T_ab*[0 ; 0 ;1];
-    
-    p_b = [cos(p_a(:,3)).*t_ba(:,1)-sin(p_a(:,3)).*t_ba(:,2)+p_a(:,1), ...
-           sin(p_a(:,3)).*t_ba(:,1)+cos(p_a(:,3)).*t_ba(:,2)+p_a(:,2), ...
-           wrapToPi(p_a(:,3) + t_ba(:,3))                          ];
-
-    % Calculate angle of p_b
-%     rot_b = wrapToPi(p_a(3,:) + t_ba(3,:));
-%     % Assemble p_b matrix
-%     p_b = [P_b(1), P_b(2), rot_b];
-end
