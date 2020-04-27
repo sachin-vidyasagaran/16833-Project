@@ -97,7 +97,7 @@ def main():
 
     timestamps, odoms, laser_scans = load_data()
 
-    start_timestamp = 430    # Default is 1, not 0
+    start_timestamp = 488    # Default is 1, not 0
 
     t_ref = 0
     match_qual = 0
@@ -105,7 +105,10 @@ def main():
 
     # Instantiate NDT object
     ndt = NDT(laser_scans[0,:])
-
+    ndt.build_NDT(laser_scans[start_timestamp,:])
+    plot_scan(ndt.current_scan, ndt.xy_max, ndt.xy_min, ndt.cell_size)
+    ndt.visualizer()
+    '''
     for t in range(start_timestamp, timestamps.shape[0]):
         print("-"*50)
         print("Timestamp: ", t, '\n')
@@ -126,6 +129,7 @@ def main():
         print("Estimated params: ", updated_params)
 
         odoms[t,:] = updated_params + odoms[t_ref,:]
+    '''
 
 
 if __name__ == "__main__":

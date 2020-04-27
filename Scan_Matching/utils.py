@@ -36,7 +36,7 @@ def plot_scan(scan, xy_max, xy_min, cell_size):
     ax.set_yticks(major_ticks)
     ax.set_yticks(minor_ticks, minor=True)
 
-    plt.scatter(scan[:,1],scan[:,0])
+    plt.scatter(-scan[:,1],scan[:,0])
     plt.scatter(0,0,c='r',marker='*',s=100)
     # And a corresponding grid
     ax.grid(which='both')
@@ -46,7 +46,7 @@ def plot_scan(scan, xy_max, xy_min, cell_size):
     ax.grid(which='major', alpha=0.8)
 
     # plt.axis('equal')
-    plt.show()
+    plt.show(block=False)
 
 def plot_2_scans(scan1, scan2, xy_max, xy_min, cell_size):
 
