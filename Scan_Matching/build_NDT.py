@@ -5,7 +5,7 @@ import csv
 import matplotlib.pyplot as plt
 from utils import *
 from scipy.linalg import block_diag
-
+from visualize_NDT import *
 
 class Cell:
     def __init__(self, x, y):
@@ -24,6 +24,23 @@ class NDT:
         self.xy_max = None
         self.xy_min = None
         self.current_scan = None
+
+    def visualizer(self):
+
+        vis_map = self.cell_maps[0]
+
+        print(len(vis_map))
+        means = []
+        covs = []
+
+        for idx in vis_map:
+            means.append(vis_map[idx].mean)
+            covs.append(make_non_singular(vis_map[idx].covariance))
+        
+        means = np.array(means)
+        covs = np.array(covs)
+
+        visualize_NDT(means, covs)
 
 
     def optimizer_function(self, params):
@@ -179,6 +196,8 @@ class NDT:
         laser_scan = get_scan_from_ranges(self.laser_ranges)
         laser_scan = prune_maxed_out_scans(laser_scan)
         scan_xy = get_cartesian(laser_scan) # Get readings as X,Y
+
+        self.current_scan = scan_xy
 
         # Limits for discretization
         self.xy_max = np.array([100, 100])

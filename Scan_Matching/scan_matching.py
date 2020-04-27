@@ -97,21 +97,24 @@ def main():
 
     timestamps, odoms, laser_scans = load_data()
 
-    start_timestamp = 1    # Default is 1, not 0
+    start_timestamp = 488    # Default is 1, not 0
 
-    t_ref = 0
     match_qual = 0
     match_qual_threshold = float("inf")
 
     # Instantiate NDT object
     ndt = NDT(laser_scans[0,:])
 
+    ndt.build_NDT(laser_scans[start_timestamp,:])
+    ndt.visualizer()
+
     with open("NDTtransforms.csv", "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(odoms[0,:])
 
         for t in range(start_timestamp, timestamps.shape[0]):
-            print("-"*50)
+            print("-"*50)   
+
             print("Timestamp: ", t, '\n')
 
             # If the quality is low, make a new NDT
