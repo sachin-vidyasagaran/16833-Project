@@ -26,20 +26,14 @@ class NDT:
         self.current_scan = None
 
     def visualizer(self):
-
-        vis_map = self.cell_maps[0]
-
-        print(len(vis_map))
+        vis_map = self.cell_maps[0] # Cell map to visualize
         means = []
         covs = []
-
-        for idx in vis_map:
+        for idx in vis_map: # Add all gaussians for visualization
             means.append(vis_map[idx].mean)
             covs.append(make_non_singular(vis_map[idx].covariance))
-        
         means = np.array(means)
         covs = np.array(covs)
-
         visualize_NDT(means, covs)
 
 
